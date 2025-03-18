@@ -1,0 +1,15 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+build/
+.idea/
+android/.gradle/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Pods/
+macos/Pods/
+*.iml
+
+# Env
+.env
