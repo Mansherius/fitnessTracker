@@ -1,0 +1,38 @@
+name: Flutter Frontend CI
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+  pull_request:
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build:
+    name: Flutter CI
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.2'  # or whichever version you're using
+
+      - name: Install dependencies
+        run: |
+          cd frontend/fittrack_frontend
+          flutter pub get
+
+      - name: Analyze code
+        run: |
+          cd frontend/fittrack_frontend
+          flutter analyze
+
+      - name: Run tests
+        run: |
+          cd frontend/fittrack_frontend
+          flutter test
