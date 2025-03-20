@@ -1,4 +1,4 @@
-package com.yourdomain.fitt_tracker
+package com.gymsync.fitt_tracker
 
 import io.flutter.embedding.android.FlutterActivity
 

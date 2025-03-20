@@ -8,7 +8,7 @@
 PRODUCT_NAME = fitt_tracker
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.yourdomain.fittTracker
+PRODUCT_BUNDLE_IDENTIFIER = com.gymsync.fittTracker
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.yourdomain. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 com.gymsync. All rights reserved.
