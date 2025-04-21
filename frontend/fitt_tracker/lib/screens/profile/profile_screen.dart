@@ -1,4 +1,6 @@
+// lib/screens/profile/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:fitt_tracker/services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -8,36 +10,13 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Placeholder variables to be replaced by backend data.
-  String _username = "JohnDoe";
-  String _profilePicUrl = ""; // If empty, a default asset image is used.
-  int _followersCount = 120;
-  int _followingCount = 80;
-  List<String> _workoutHistory = [
-    "Chest Day",
-    "Leg Day",
-    "Back & Biceps",
-    "Shoulders & Triceps",
-  ];
+  final ProfileService _service = ProfileService();
 
-  // Simulated method to load profile data from the backend.
-  Future<void> _loadProfileData() async {
-    // Replace with your API call.
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      // Update these variables with the actual data from your backend.
-      _username = "JohnDoe";
-      _profilePicUrl = ""; // Use a network URL if available.
-      _followersCount = 120;
-      _followingCount = 80;
-      _workoutHistory = [
-        "Chest Day",
-        "Leg Day",
-        "Back & Biceps",
-        "Shoulders & Triceps",
-      ];
-    });
-  }
+  String _username = '';
+  String _profilePicUrl = '';
+  int _followersCount = 0;
+  int _followingCount = 0;
+  List<String> _workoutHistory = [];
 
   @override
   void initState() {
@@ -45,175 +24,178 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
   }
 
-  // Show leaderboard bottom sheet.
-  void _showLeaderboard() {
+  Future<void> _loadProfileData() async {
+    final profile = await _service.fetchUserProfile();
+    final history = await _service.fetchWorkoutHistory();
+    if (!mounted) return;
+    setState(() {
+      _username = profile['username'] as String;
+      _profilePicUrl = profile['profilePicUrl'] as String;
+      _followersCount = profile['followersCount'] as int;
+      _followingCount = profile['followingCount'] as int;
+      _workoutHistory = history;
+    });
+  }
+
+  Future<void> _showLeaderboard() async {
+    final leaderboard = await _service.fetchLeaderboard(_username);
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        // Placeholder leaderboard data.
-        final List<Map<String, dynamic>> leaderboard = [
-          {"username": "Alice", "score": 150},
-          {"username": "Bob", "score": 140},
-          {"username": "Charlie", "score": 130},
-          {"username": _username, "score": 120},
-        ];
-        return Container(
-          padding: const EdgeInsets.all(16.0),
-          height: 300,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Leaderboard",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(16),
+        height: 300,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Leaderboard",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const Divider(),
+            Expanded(
+              child: ListView.builder(
+                itemCount: leaderboard.length,
+                itemBuilder: (_, i) {
+                  final entry = leaderboard[i];
+                  return ListTile(
+                    title: Text(entry['username'] as String),
+                    trailing: Text("Score: ${entry['score'] as int}"),
+                  );
+                },
               ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: leaderboard.length,
-                  itemBuilder: (context, index) {
-                    final entry = leaderboard[index];
-                    return ListTile(
-                      title: Text(entry["username"]),
-                      trailing: Text("Score: ${entry["score"]}"),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // Build the profile header widget.
-  Widget _buildProfileHeader() {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 40,
-          backgroundImage: _profilePicUrl.isNotEmpty
-              ? NetworkImage(_profilePicUrl)
-              : const AssetImage('assets/images/default_profile.png')
-                  as ImageProvider,
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _username,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text("Followers: $_followersCount",
-                      style: const TextStyle(color: Colors.white)),
-                  const SizedBox(width: 16),
-                  Text("Following: $_followingCount",
-                      style: const TextStyle(color: Colors.white)),
-                ],
-              ),
-            ],
-          ),
-        ),
-        IconButton(
-          onPressed: () {
-            // Navigate to pending friend requests or a 'find friend' screen.
-            Navigator.pushNamed(context, '/friendRequests');
-          },
-          icon: const Icon(Icons.person_add, color: Colors.white),
-        ),
-      ],
-    );
-  }
-
-  // Build the workout history list.
-  Widget _buildWorkoutHistory() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Workout History",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        const SizedBox(height: 8),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _workoutHistory.length,
-          itemBuilder: (context, index) {
-            final String workoutTitle = _workoutHistory[index];
-            return ListTile(
-              title: Text(
-                workoutTitle,
-                style: const TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                // Navigate to the workout details screen with the workout title.
-                Navigator.pushNamed(context, '/workout', arguments: {'title': workoutTitle});
-              },
-            );
-          },
-        ),
-      ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text("Profile"),
+    if (_username.isEmpty) {
+      return const Scaffold(
         backgroundColor: Colors.black,
-        actions: [
-          IconButton(
-            onPressed: _showLeaderboard,
-            icon: const Icon(Icons.leaderboard),
-          ),
-        ],
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final workoutsCount = _workoutHistory.length;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const SizedBox.shrink(),
+        elevation: 0,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildProfileHeader(),
-            const SizedBox(height: 24),
-            // Buttons for friend requests and finding friends.
+            // --- Top Row: Avatar + (Username + Metrics) ---
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Navigate to pending friend requests.
-                    Navigator.pushNamed(context, '/friendRequests');
-                  },
-                  icon: const Icon(Icons.pending_actions),
-                  label: const Text("Pending Requests"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                CircleAvatar(
+                  radius: 40,
+                  backgroundImage: _profilePicUrl.isNotEmpty
+                      ? NetworkImage(_profilePicUrl)
+                      : const AssetImage('assets/images/default_profile.png')
+                          as ImageProvider,
                 ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Navigate to a 'find friend' screen.
-                    Navigator.pushNamed(context, '/findFriend');
-                  },
-                  icon: const Icon(Icons.search),
-                  label: const Text("Find a Friend"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Username
+                      Text(
+                        _username,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Metrics wrapped to avoid overflow
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 4,
+                        children: [
+                          Text("Followers: $_followersCount",
+                              style: const TextStyle(color: Colors.white)),
+                          Text("Following: $_followingCount",
+                              style: const TextStyle(color: Colors.white)),
+                          Text("Workouts: $workoutsCount",
+                              style: const TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
-            _buildWorkoutHistory(),
+
+            // --- Action Buttons (Purple) ---
+            Wrap(
+              spacing: 16,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _showLeaderboard,
+                  icon: const Icon(Icons.leaderboard),
+                  label: const Text("Leaderboard"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/userSearch');
+                  },
+                  icon: const Icon(Icons.person_add),
+                  label: const Text("Search/Add"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // --- Workout History ---
+            const Text(
+              "Workout History",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _workoutHistory.length,
+              itemBuilder: (context, i) {
+                final title = _workoutHistory[i];
+                return ListTile(
+                  title: Text(title,
+                      style: const TextStyle(color: Colors.white)),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    '/workout',
+                    arguments: {'title': title},
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

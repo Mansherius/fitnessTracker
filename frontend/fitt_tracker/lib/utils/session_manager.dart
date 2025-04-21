@@ -4,20 +4,21 @@ class SessionManager {
   static const _keyAuthToken = 'authToken';
   static const _keySessionTimestamp = 'sessionTimestamp';
 
-  // Save session details
+  // Save session details (you can choose what data to store)
   static Future<void> saveSession(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyAuthToken, token);
     await prefs.setInt(_keySessionTimestamp, DateTime.now().millisecondsSinceEpoch);
   }
 
-  // Retrieve session details
+  // Retrieve the authentication token (if any)
   static Future<String?> getAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyAuthToken);
   }
 
-  // Check if session is still valid
+  // Check if session is still valid (here, we check for a token's existence,
+  // and you can add expiration logic as needed)
   static Future<bool> isSessionValid({Duration validDuration = const Duration(days: 7)}) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_keyAuthToken);
@@ -28,7 +29,7 @@ class SessionManager {
     return DateTime.now().difference(sessionTime) < validDuration;
   }
 
-  // Clear session on logout or when needed
+  // Clear the stored session data
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyAuthToken);
