@@ -26,15 +26,38 @@ class DatabaseConnector:
     def execute_query(self, query, params=None, commit=True, fetch=False):
         if self.connection is None:
             self.connect()
+        
         try:
-            self.cursor.execute(query, params)  # Pass the params here
+            self.cursor.execute(query, params)
+            
             if commit:
                 self.connection.commit()
-            if fetch:  # If fetch is True, fetch results
+            
+            if fetch:
                 return self.cursor.fetchall()
-        except Exception as e:
-            print(f"An error occurred: {e}")
+
+        except psycopg2.errors.UniqueViolation as e:
+            print(f"Unique violation error: {e}")
+            raise ValueError("Duplicate value error: A unique constraint has been violated.")
+        
+        except psycopg2.errors.ForeignKeyViolation as e:
+            print(f"Foreign key violation error: {e}")
+            raise ValueError("Foreign key constraint violation.")
+        
+        except psycopg2.errors.CheckViolation as e:
+            print(f"Check constraint violation error: {e}")
+            raise ValueError("Check constraint violation.")
+        
+        except psycopg2.DatabaseError as e:
+            print(f"Database error occurred: {e}")
             self.connection.rollback()
+            raise ValueError("A database error occurred during the query execution.")
+        
+        except Exception as e:
+            # Catch any other errors
+            print(f"An unexpected error occurred: {e}")
+            self.connection.rollback()
+            raise e
 
 
     def close(self):
