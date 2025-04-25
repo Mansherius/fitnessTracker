@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from database_connector import DatabaseConnector
-import pandas as pd
+from s3_manager import S3Manager
 
 class DatabaseManager:
     def __init__(self):
@@ -33,7 +33,7 @@ class DatabaseManager:
             print(f"An error occurred while fetching user profile for {user_id}: {e}")
             return None
 
-    def update_user_profile(self, user_id, name=None, email=None, fitness_level=None, profile_picture_url=None):
+    def update_user_profile(self, user_id, name=None, email=None, fitness_level=None):
         try: 
             update_fields = []
             params = []
@@ -49,10 +49,6 @@ class DatabaseManager:
             if fitness_level is not None:
                 update_fields.append("fitness_level = %s")
                 params.append(fitness_level)
-            
-            if profile_picture_url is not None:
-                update_fields.append("profile_picture_url = %s")
-                params.append(profile_picture_url)
 
             if not update_fields:
                 print(f"No fields provided for update for user {user_id}.")
@@ -67,6 +63,41 @@ class DatabaseManager:
         except Exception as e:
             print(f"An error occurred while updating user {user_id}: {e}")
             return
+
+    def update_profile_picture(self, user_id, profile_picture_key):
+        try:
+            query = "UPDATE users SET profile_picture_url = %s WHERE id = %s"
+            params = (profile_picture_key, user_id)
+            self.connector.execute_query(query, params)
+            print(f"Profile picture updated for user {user_id}.")
+            return True
+        except Exception as e:
+            print(f"An error occurred while updating profile picture for user {user_id}: {e}")
+            return False
+
+    def get_profile_picture_key(self, user_id):
+        try:
+            query = "SELECT profile_picture_url FROM users WHERE id = %s"
+            params = (user_id,)
+            result = self.connector.execute_query(query, params, commit=False, fetch=True)
+            
+            if result and result[0][0]:
+                return result[0][0]
+            return None
+        except Exception as e:
+            print(f"An error occurred while fetching profile picture key for user {user_id}: {e}")
+            return None
+
+    def clear_profile_picture(self, user_id):
+        try:
+            query = "UPDATE users SET profile_picture_url = NULL WHERE id = %s"
+            params = (user_id,)
+            self.connector.execute_query(query, params)
+            print(f"Profile picture removed for user {user_id}.")
+            return True
+        except Exception as e:
+            print(f"An error occurred while clearing profile picture for user {user_id}: {e}")
+            return False
 
     def delete_user(self, user_id):
         try:
@@ -332,9 +363,53 @@ class DatabaseManager:
             print(f"An error occurred while fetching leaderboard: {e}")
             return None
 
-
     def get_user_ranking(self, user_id):
         query = "SELECT rank() OVER (ORDER BY total_weight_lifted DESC) FROM leaderboard WHERE user_id = %s"
         params = (user_id,)
         result = self.connector.execute_query(query, params, commit=False, fetch=True)
         return result[0][0] if result else None
+
+class ProfilePictureHandler:
+    def __init__(self):
+        self.s3_manager = S3Manager()
+        self.db_manager = DatabaseManager()
+    
+    def upload_profile_picture(self, user_id, image_data, content_type):
+        existing_key = self.db_manager.get_profile_picture_key(user_id)
+        
+        if existing_key:
+            self.s3_manager.delete_profile_picture(existing_key)
+        
+        s3_key = self.s3_manager.upload_profile_picture(user_id, image_data, content_type)
+        
+        if not s3_key:
+            return False
+        
+        return self.db_manager.update_profile_picture(user_id, s3_key)
+    
+    def get_profile_picture(self, user_id):
+        s3_key = self.db_manager.get_profile_picture_key(user_id)
+        
+        if not s3_key:
+            return None, None
+        
+        return self.s3_manager.get_profile_picture_data(s3_key)
+    
+    def get_profile_picture_url(self, user_id, expiration=3600):
+        s3_key = self.db_manager.get_profile_picture_key(user_id)
+        
+        if not s3_key:
+            return None
+        
+        return self.s3_manager.get_profile_picture_url(s3_key, expiration)
+    
+    def delete_profile_picture(self, user_id):
+        s3_key = self.db_manager.get_profile_picture_key(user_id)
+        
+        if not s3_key:
+            return True 
+        
+        if not self.s3_manager.delete_profile_picture(s3_key):
+            return False
+        
+        return self.db_manager.clear_profile_picture(user_id)
