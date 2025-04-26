@@ -7,6 +7,8 @@ class DatabaseManager:
     def __init__(self):
         self.connector = DatabaseConnector()
 
+    # User Management
+
     def add_user(self, name, email, password_hash, age, gender, fitness_level=None, profile_picture_url=None):
         try:
             user_id = uuid.uuid4()
@@ -276,6 +278,7 @@ class DatabaseManager:
             return
 
     # Leaderboard Data Management
+
     def update_leaderboard(self):
         try:
             query = """
@@ -368,6 +371,148 @@ class DatabaseManager:
         params = (user_id,)
         result = self.connector.execute_query(query, params, commit=False, fetch=True)
         return result[0][0] if result else None
+
+    # Social Management
+
+    def follow_user(self, follower_id, following_id):
+        try:
+            if follower_id == following_id:
+                print("Users cannot follow themselves.")
+                return False
+                
+            query = """
+                INSERT INTO user_follows (follower_id, following_id)
+                VALUES (%s, %s)
+            """
+            params = (follower_id, following_id)
+            self.connector.execute_query(query, params)
+            print(f"User {follower_id} is now following user {following_id}.")
+            return True
+        except Exception as e:
+            print(f"An error occurred while following user: {e}")
+            return False
+
+    def unfollow_user(self, follower_id, following_id):
+        try:
+            query = """
+                DELETE FROM user_follows
+                WHERE follower_id = %s AND following_id = %s
+            """
+            params = (follower_id, following_id)
+            self.connector.execute_query(query, params)
+            print(f"User {follower_id} has unfollowed user {following_id}.")
+            return True
+        except Exception as e:
+            print(f"An error occurred while unfollowing user: {e}")
+            return False
+
+    def get_followers(self, user_id):
+        try:
+            query = """
+                SELECT u.id, u.name, u.profile_picture_url
+                FROM user_follows f
+                JOIN users u ON f.follower_id = u.id
+                WHERE f.following_id = %s
+                ORDER BY f.created_at DESC
+            """
+            params = (user_id,)
+            followers = self.connector.execute_query(query, params, commit=False, fetch=True)
+            return followers
+        except Exception as e:
+            print(f"An error occurred while fetching followers: {e}")
+            return None
+
+    def get_following(self, user_id):
+        try:
+            query = """
+                SELECT u.id, u.name, u.profile_picture_url
+                FROM user_follows f
+                JOIN users u ON f.following_id = u.id
+                WHERE f.follower_id = %s
+                ORDER BY f.created_at DESC
+            """
+            params = (user_id,)
+            following = self.connector.execute_query(query, params, commit=False, fetch=True)
+            return following
+        except Exception as e:
+            print(f"An error occurred while fetching following: {e}")
+            return None
+
+    def is_following(self, follower_id, following_id):
+        try:
+            query = """
+                SELECT EXISTS(
+                    SELECT 1 FROM user_follows
+                    WHERE follower_id = %s AND following_id = %s
+                )
+            """
+            params = (follower_id, following_id)
+            result = self.connector.execute_query(query, params, commit=False, fetch=True)
+            return result[0][0] if result else False
+        except Exception as e:
+            print(f"An error occurred while checking follow status: {e}")
+            return False
+
+    # Feed Management
+
+    def get_workout_feed(self, user_id, limit=20, offset=0, include_viewed=False):
+        try:
+            viewed_clause = "" if include_viewed else f"""
+                AND NOT EXISTS (
+                    SELECT 1 FROM workout_views
+                    WHERE workout_id = w.id AND viewer_id = %s
+                )
+            """
+            
+            query = f"""
+                SELECT 
+                    w.id,
+                    w.exercise,
+                    w.sets,
+                    w.reps,
+                    w.weight,
+                    w.date,
+                    u.id AS user_id,
+                    u.name,
+                    u.profile_picture_url
+                FROM workouts w
+                JOIN users u ON w.user_id = u.id
+                WHERE w.user_id IN (
+                    SELECT following_id
+                    FROM user_follows
+                    WHERE follower_id = %s
+                )
+                {viewed_clause}
+                ORDER BY w.date DESC
+                LIMIT %s OFFSET %s
+            """
+            
+            params = [user_id, user_id] if not include_viewed else [user_id]
+            params.extend([limit, offset])
+            
+            feed_items = self.connector.execute_query(query, tuple(params), commit=False, fetch=True)
+            return feed_items
+        except Exception as e:
+            print(f"An error occurred while fetching workout feed: {e}")
+            return None
+
+    def mark_workout_viewed(self, workout_id, viewer_id):
+        """
+        Mark a workout as viewed by a user
+        """
+        try:
+            view_id = uuid.uuid4()
+            query = """
+                INSERT INTO workout_views (id, workout_id, viewer_id)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (workout_id, viewer_id) DO NOTHING
+            """
+            params = (str(view_id), workout_id, viewer_id)
+            self.connector.execute_query(query, params)
+            return True
+        except Exception as e:
+            print(f"An error occurred while marking workout as viewed: {e}")
+            return False
 
 class ProfilePictureHandler:
     def __init__(self):
