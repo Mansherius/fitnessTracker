@@ -9,6 +9,26 @@ class DatabaseManager:
 
     # User Management
 
+    def get_user_id(self, email=None, name=None):
+        try:
+            if email:
+                query = "SELECT id FROM users WHERE email = %s"
+                params = (email,)
+            elif name:
+                query = "SELECT id FROM users WHERE name = %s"
+                params = (name,)
+            else:
+                print("Either email or name must be provided.")
+                return None
+            
+            result = self.connector.execute_query(query, params, commit=False, fetch=True)
+            if result and result[0][0]:
+                return result[0][0]
+            return None
+        except Exception as e:
+            print(f"An error occurred while getting user ID: {e}")
+            return None
+    
     def add_user(self, name, email, password_hash, age, gender, fitness_level=None, profile_picture_url=None):
         try:
             user_id = uuid.uuid4()
