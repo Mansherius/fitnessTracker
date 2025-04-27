@@ -38,14 +38,17 @@ class DatabaseConnector:
 
         except psycopg2.errors.UniqueViolation as e:
             print(f"Unique violation error: {e}")
+            self.connection.rollback()
             raise ValueError("Duplicate value error: A unique constraint has been violated.")
         
         except psycopg2.errors.ForeignKeyViolation as e:
             print(f"Foreign key violation error: {e}")
+            self.connection.rollback()
             raise ValueError("Foreign key constraint violation.")
         
         except psycopg2.errors.CheckViolation as e:
             print(f"Check constraint violation error: {e}")
+            self.connection.rollback()
             raise ValueError("Check constraint violation.")
         
         except psycopg2.DatabaseError as e:
