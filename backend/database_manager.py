@@ -132,37 +132,56 @@ class DatabaseManager:
             return
 
     # Workout Management
-
-    def add_workout(self, user_id, exercise, sets, reps, weight, date):
+    def start_workout(self, user_id, date, name=None, notes=None):
         try:
             workout_id = uuid.uuid4()
             query = """
-                INSERT INTO workouts (id, user_id, date, exercise, sets, reps, weight)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO workouts (id, user_id, date, name, notes)
+                VALUES (%s, %s, %s, %s, %s)
             """
-            params = (str(workout_id), user_id, date, exercise, sets, reps, weight)
+            params = (str(workout_id), user_id, date, name, notes)
             self.connector.execute_query(query, params)
-            print(f"Workout for user {user_id} added.")
+            print(f"Workout session started for user {user_id}.")
+            return str(workout_id)
         except Exception as e:
-            print(f"An error occurred while adding workout for user {user_id}: {e}")
-            return
-
-    def get_workouts(self, user_id):
-        try:
-            query = "SELECT * FROM workouts WHERE user_id = %s"
-            params = (str(user_id),)
-            workouts = self.connector.execute_query(query, params, commit=False, fetch=True)
-            return workouts
-        except Exception as e:
-            print(f"An error occurred while fetching workouts for user {user_id}: {e}")
+            print(f"An error occurred while starting workout for user {user_id}: {e}")
             return None
 
-    def update_workout(self, workout_id, exercise=None, sets=None, reps=None, weight=None, date=None):
+    def log_exercise(self, workout_id, exercise, sets, reps, weight):
+        try:
+            exercise_id = uuid.uuid4()
+            query = """
+                INSERT INTO exercises (id, workout_id, exercise, sets, reps, weight)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            params = (str(exercise_id), workout_id, exercise, sets, reps, weight)
+            self.connector.execute_query(query, params)
+            print(f"Exercise logged for workout {workout_id}.")
+            return str(exercise_id)
+        except Exception as e:
+            print(f"An error occurred while logging exercise for workout {workout_id}: {e}")
+            return None
+
+    def get_workout_exercises(self, workout_id):
+        try:
+            query = """
+                SELECT id, exercise, sets, reps, weight, created_at
+                FROM exercises
+                WHERE workout_id = %s
+                ORDER BY created_at
+            """
+            params = (workout_id,)
+            exercises = self.connector.execute_query(query, params, commit=False, fetch=True)
+            return exercises
+        except Exception as e:
+            print(f"An error occurred while fetching exercises for workout {workout_id}: {e}")
+            return None
+
+    def update_exercise(self, exercise_id, exercise=None, sets=None, reps=None, weight=None):
         try:
             columns_to_update = []
             params = []
 
-            # Add columns to the update query if the corresponding values are provided
             if exercise is not None:
                 columns_to_update.append("exercise = %s")
                 params.append(exercise)
@@ -179,39 +198,97 @@ class DatabaseManager:
                 columns_to_update.append("weight = %s")
                 params.append(weight)
 
+            if not columns_to_update:
+                print("No updates provided.")
+                return False
+
+            params.append(exercise_id)
+
+            query = f"""
+                UPDATE exercises SET {', '.join(columns_to_update)} WHERE id = %s
+            """
+            
+            self.connector.execute_query(query, tuple(params))
+            print(f"Exercise {exercise_id} updated.")
+            return True
+        except Exception as e:
+            print(f"An error occurred while updating exercise {exercise_id}: {e}")
+            return False
+
+    def delete_exercise(self, exercise_id):
+        try:
+            query = "DELETE FROM exercises WHERE id = %s"
+            params = (exercise_id,)
+            self.connector.execute_query(query, params)
+            print(f"Exercise {exercise_id} deleted.")
+            return True
+        except Exception as e:
+            print(f"An error occurred while deleting exercise {exercise_id}: {e}")
+            return False
+
+    def get_user_workouts(self, user_id):
+        try:
+            query = """
+                SELECT w.id, w.date, w.name, w.notes, w.created_at,
+                    COUNT(e.id) AS exercise_count,
+                    SUM(e.sets * e.reps * e.weight) AS total_weight_lifted
+                FROM workouts w
+                LEFT JOIN exercises e ON w.id = e.workout_id
+                WHERE w.user_id = %s
+                GROUP BY w.id
+                ORDER BY w.date DESC
+            """
+            params = (user_id,)
+            workouts = self.connector.execute_query(query, params, commit=False, fetch=True)
+            return workouts
+        except Exception as e:
+            print(f"An error occurred while fetching workouts for user {user_id}: {e}")
+            return None
+
+    def update_workout(self, workout_id, date=None, name=None, notes=None):
+        try:
+            columns_to_update = []
+            params = []
+
             if date is not None:
                 columns_to_update.append("date = %s")
                 params.append(date)
+            
+            if name is not None:
+                columns_to_update.append("name = %s")
+                params.append(name)
+            
+            if notes is not None:
+                columns_to_update.append("notes = %s")
+                params.append(notes)
 
-            # Append the workout_id to the params
-            params.append(workout_id)
-
-            # If there are no fields to update, return an error message
             if not columns_to_update:
                 print("No updates provided.")
-                return
+                return False
 
-            # Build the dynamic query
+            params.append(workout_id)
+
             query = f"""
                 UPDATE workouts SET {', '.join(columns_to_update)} WHERE id = %s
             """
             
-            # Execute the query with the dynamically created parameters
             self.connector.execute_query(query, tuple(params))
             print(f"Workout {workout_id} updated.")
+            return True
         except Exception as e:
             print(f"An error occurred while updating workout {workout_id}: {e}")
-            return
+            return False
 
     def delete_workout(self, workout_id):
         try:
             query = "DELETE FROM workouts WHERE id = %s"
             params = (workout_id,)
             self.connector.execute_query(query, params)
-            print(f"Workout {workout_id} deleted.")
+            print(f"Workout {workout_id} and all its exercises deleted.")
+            return True
         except Exception as e:
             print(f"An error occurred while deleting workout {workout_id}: {e}")
-            return
+            return False
 
     # can remove this function and keep it only for python
     def get_total_weight_lifted(self, user_id):
@@ -287,15 +364,32 @@ class DatabaseManager:
             print(f"An error occurred while updating measurement {measurement_id}: {e}")
             return
 
-    def delete_measurement(self, measurement_id):
+    def get_total_weight_lifted(self, user_id):
+        """
+        Calculate the total weight lifted by a user across all exercises
+        
+        Args:
+            user_id (str): UUID of the user
+        
+        Returns:
+            float: Total weight lifted by the user
+        """
         try:
-            query = "DELETE FROM measurements WHERE id = %s"
-            params = (measurement_id,)
-            self.connector.execute_query(query, params)
-            print(f"Measurement {measurement_id} deleted.")
+            query = """
+                SELECT SUM(e.sets * e.reps * e.weight)
+                FROM exercises e
+                JOIN workouts w ON e.workout_id = w.id
+                WHERE w.user_id = %s
+            """
+            params = (user_id,)
+            result = self.connector.execute_query(query, params, commit=False, fetch=True)
+            if result and result[0][0] is not None:
+                return result[0][0]
+            else:
+                return 0
         except Exception as e:
-            print(f"An error occurred while deleting measurement {measurement_id}: {e}")
-            return
+            print(f"An error occurred while fetching total weight lifted for user {user_id}: {e}")
+            return None
 
     # Leaderboard Data Management
 
@@ -305,10 +399,11 @@ class DatabaseManager:
             WITH leaderboard_data AS (
                 SELECT 
                     w.user_id,
-                    SUM(w.sets * w.reps * w.weight) AS total_weight_lifted,
-                    COUNT(DISTINCT w.date) AS workout_days_count,
+                    SUM(e.sets * e.reps * e.weight) AS total_weight_lifted,
+                    COUNT(DISTINCT w.id) AS workout_days_count,
                     MAX(w.date) AS last_workout
                 FROM workouts w
+                JOIN exercises e ON w.id = e.workout_id
                 GROUP BY w.user_id
             )
             
@@ -354,11 +449,12 @@ class DatabaseManager:
                 query = f"""
                 SELECT 
                     u.name,
-                    SUM(w.sets * w.reps * w.weight) AS total_weight_lifted,
-                    COUNT(DISTINCT w.date) AS workout_days_count,
+                    SUM(e.sets * e.reps * e.weight) AS total_weight_lifted,
+                    COUNT(DISTINCT w.id) AS workout_days_count,
                     MAX(w.date) AS last_workout
                 FROM users u
                 JOIN workouts w ON u.id = w.user_id
+                JOIN exercises e ON w.id = e.workout_id
                 {date_filter}
                 GROUP BY u.id, u.name
                 ORDER BY total_weight_lifted DESC
@@ -385,7 +481,6 @@ class DatabaseManager:
         except Exception as e:
             print(f"An error occurred while fetching leaderboard: {e}")
             return None
-
     def get_user_ranking(self, user_id):
         query = "SELECT rank() OVER (ORDER BY total_weight_lifted DESC) FROM leaderboard WHERE user_id = %s"
         params = (user_id,)
@@ -487,22 +582,23 @@ class DatabaseManager:
             query = f"""
                 SELECT 
                     w.id,
-                    w.exercise,
-                    w.sets,
-                    w.reps,
-                    w.weight,
                     w.date,
+                    w.name,
                     u.id AS user_id,
-                    u.name,
-                    u.profile_picture_url
+                    u.name AS user_name,
+                    u.profile_picture_url,
+                    COUNT(e.id) AS exercise_count,
+                    SUM(e.sets * e.reps * e.weight) AS total_weight_lifted
                 FROM workouts w
                 JOIN users u ON w.user_id = u.id
+                LEFT JOIN exercises e ON w.id = e.workout_id
                 WHERE w.user_id IN (
                     SELECT following_id
                     FROM user_follows
                     WHERE follower_id = %s
                 )
                 {viewed_clause}
+                GROUP BY w.id, u.id
                 ORDER BY w.date DESC
                 LIMIT %s OFFSET %s
             """
@@ -516,10 +612,59 @@ class DatabaseManager:
             print(f"An error occurred while fetching workout feed: {e}")
             return None
 
+    def get_workout_details(self, workout_id):
+        try:
+            # Get workout information
+            workout_query = """
+                SELECT w.id, w.date, w.name, w.notes, u.id AS user_id, u.name AS user_name, u.profile_picture_url
+                FROM workouts w
+                JOIN users u ON w.user_id = u.id
+                WHERE w.id = %s
+            """
+            workout_params = (workout_id,)
+            workout_result = self.connector.execute_query(workout_query, workout_params, commit=False, fetch=True)
+            
+            if not workout_result:
+                return None
+            
+            # Get exercises for the workout
+            exercises_query = """
+                SELECT id, exercise, sets, reps, weight, created_at
+                FROM exercises
+                WHERE workout_id = %s
+                ORDER BY created_at
+            """
+            exercises_params = (workout_id,)
+            exercises_result = self.connector.execute_query(exercises_query, exercises_params, commit=False, fetch=True)
+            
+            # Format the results
+            workout_info = {
+                'id': workout_result[0][0],
+                'date': workout_result[0][1],
+                'name': workout_result[0][2],
+                'notes': workout_result[0][3],
+                'user_id': workout_result[0][4],
+                'user_name': workout_result[0][5],
+                'profile_picture_url': workout_result[0][6],
+                'exercises': []
+            }
+            
+            for exercise in exercises_result:
+                workout_info['exercises'].append({
+                    'id': exercise[0],
+                    'exercise': exercise[1],
+                    'sets': exercise[2],
+                    'reps': exercise[3],
+                    'weight': exercise[4],
+                    'created_at': exercise[5]
+                })
+            
+            return workout_info
+        except Exception as e:
+            print(f"An error occurred while fetching workout details for {workout_id}: {e}")
+            return None
+
     def mark_workout_viewed(self, workout_id, viewer_id):
-        """
-        Mark a workout as viewed by a user
-        """
         try:
             view_id = uuid.uuid4()
             query = """

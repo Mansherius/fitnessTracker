@@ -2,7 +2,7 @@
 
 This documentation describes the backend API for the Fitness Tracker application, focusing on the `DatabaseManager` class which serves as the primary interface for the middle layer.
 
-## Database Manager
+## DatabaseManager
 
 The `DatabaseManager` class provides methods for interacting with the Fitness Tracker database. It handles user management, workouts, measurements, leaderboards, and social features.
 
@@ -14,6 +14,21 @@ dbm = DatabaseManager()
 ```
 
 ## User Management
+
+### get_user_id
+
+Gets a user's UUID by email or name.
+
+```python
+def get_user_id(self, email=None, name=None)
+```
+
+**Parameters:**
+- `email` (str, optional): User's email address
+- `name` (str, optional): User's name
+
+**Returns:**
+- `str`: UUID of the user, or None if not found
 
 ### add_user
 
@@ -161,44 +176,136 @@ def clear_profile_picture(self, user_id)
 
 ## Workout Management
 
-### add_workout
+### start_workout
 
-Adds a new workout for a user.
+Starts a new workout session for a user.
 
 ```python
-def add_workout(self, user_id, exercise, sets, reps, weight, date)
+def start_workout(self, user_id, date, name=None, notes=None)
 ```
 
 **Parameters:**
 - `user_id` (str): UUID of the user
+- `date` (datetime/str): Date of the workout
+- `name` (str, optional): Name of the workout (e.g., "Leg Day")
+- `notes` (str, optional): Additional notes about the workout
+
+**Returns:**
+- `str`: UUID of the created workout, or None if an error occurs
+
+**Example:**
+```python
+workout_id = dbm.start_workout(
+    user_id='4373271c-5141-433e-b868-5f1a2c9174f1',
+    date="2025-04-27",
+    name="Monday Leg Day"
+)
+# Output: Workout session started for user 4373271c-5141-433e-b868-5f1a2c9174f1.
+```
+
+### log_exercise
+
+Logs an exercise in a workout session.
+
+```python
+def log_exercise(self, workout_id, exercise, sets, reps, weight)
+```
+
+**Parameters:**
+- `workout_id` (str): UUID of the workout
 - `exercise` (str): Name of the exercise
 - `sets` (int): Number of sets
 - `reps` (int): Number of repetitions
 - `weight` (float): Weight used in the exercise
-- `date` (datetime/str): Date of the workout
 
 **Returns:**
-- None
+- `str`: UUID of the created exercise, or None if an error occurs
 
 **Example:**
 ```python
-dbm.add_workout(
-    user_id='4373271c-5141-433e-b868-5f1a2c9174f1',
-    date="2023-10-02",
+exercise_id = dbm.log_exercise(
+    workout_id='2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d',
     exercise="Leg Press",
     sets=3,
     reps=10,
     weight=70
 )
-# Output: Workout for user 4373271c-5141-433e-b868-5f1a2c9174f1 added.
+# Output: Exercise logged for workout 2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d.
 ```
 
-### get_workouts
+### get_workout_exercises
 
-Retrieves all workouts for a user.
+Gets all exercises for a workout.
 
 ```python
-def get_workouts(self, user_id)
+def get_workout_exercises(self, workout_id)
+```
+
+**Parameters:**
+- `workout_id` (str): UUID of the workout
+
+**Returns:**
+- List of tuples containing exercise information, or None if an error occurs
+
+**Example:**
+```python
+exercises = dbm.get_workout_exercises(workout_id='2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d')
+# Results contain: id, exercise, sets, reps, weight, created_at
+```
+
+### update_exercise
+
+Updates an exercise in a workout.
+
+```python
+def update_exercise(self, exercise_id, exercise=None, sets=None, reps=None, weight=None)
+```
+
+**Parameters:**
+- `exercise_id` (str): UUID of the exercise
+- `exercise` (str, optional): New exercise name
+- `sets` (int, optional): New number of sets
+- `reps` (int, optional): New number of repetitions
+- `weight` (float, optional): New weight
+
+**Returns:**
+- `bool`: True if successful, False otherwise
+
+**Example:**
+```python
+dbm.update_exercise(
+    exercise_id='3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r',
+    weight=75
+)
+# Output: Exercise 3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r updated.
+```
+
+### delete_exercise
+
+Deletes an exercise from a workout.
+
+```python
+def delete_exercise(self, exercise_id)
+```
+
+**Parameters:**
+- `exercise_id` (str): UUID of the exercise
+
+**Returns:**
+- `bool`: True if successful, False otherwise
+
+**Example:**
+```python
+dbm.delete_exercise(exercise_id='3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r')
+# Output: Exercise 3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r deleted.
+```
+
+### get_user_workouts
+
+Gets all workouts for a user.
+
+```python
+def get_user_workouts(self, user_id)
 ```
 
 **Parameters:**
@@ -209,61 +316,79 @@ def get_workouts(self, user_id)
 
 **Example:**
 ```python
-results = dbm.get_workouts(user_id='4373271c-5141-433e-b868-5f1a2c9174f1')
-# Results contain: id, user_id, date, exercise, sets, reps, weight, created_at
+workouts = dbm.get_user_workouts(user_id='4373271c-5141-433e-b868-5f1a2c9174f1')
+# Results contain: id, date, name, notes, created_at, exercise_count, total_weight_lifted
 ```
 
 ### update_workout
 
-Updates an existing workout.
+Updates a workout session.
 
 ```python
-def update_workout(self, workout_id, exercise=None, sets=None, reps=None, weight=None, date=None)
+def update_workout(self, workout_id, date=None, name=None, notes=None)
 ```
 
 **Parameters:**
 - `workout_id` (str): UUID of the workout
-- `exercise` (str, optional): New exercise name
-- `sets` (int, optional): New number of sets
-- `reps` (int, optional): New number of repetitions
-- `weight` (float, optional): New weight
 - `date` (datetime/str, optional): New date
+- `name` (str, optional): New name
+- `notes` (str, optional): New notes
 
 **Returns:**
-- None
+- `bool`: True if successful, False otherwise
 
 **Example:**
 ```python
 dbm.update_workout(
-    workout_id='5e8987a4-8164-4120-99d8-2cb13de8b98c',
-    date="2025-04-27"
+    workout_id='2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d',
+    name="Updated Leg Day"
 )
-# Output: Workout 5e8987a4-8164-4120-99d8-2cb13de8b98c updated.
+# Output: Workout 2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d updated.
 ```
 
 ### delete_workout
 
-Deletes a workout.
+Deletes a workout and all its exercises.
 
 ```python
 def delete_workout(self, workout_id)
 ```
 
 **Parameters:**
-- `workout_id` (str): UUID of the workout to delete
+- `workout_id` (str): UUID of the workout
 
 **Returns:**
-- None
+- `bool`: True if successful, False otherwise
 
 **Example:**
 ```python
-dbm.delete_workout(workout_id='677c3b50-8177-4fb3-9412-bbc149c45470')
-# Output: Workout 677c3b50-8177-4fb3-9412-bbc149c45470 deleted.
+dbm.delete_workout(workout_id='2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d')
+# Output: Workout 2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d and all its exercises deleted.
+```
+
+### get_workout_details
+
+Gets detailed information about a workout including all exercises.
+
+```python
+def get_workout_details(self, workout_id)
+```
+
+**Parameters:**
+- `workout_id` (str): UUID of the workout
+
+**Returns:**
+- `dict`: Dictionary containing workout details and exercises, or None if not found
+
+**Example:**
+```python
+details = dbm.get_workout_details(workout_id='2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d')
+# Returns a dictionary with workout details and a list of exercises
 ```
 
 ### get_total_weight_lifted
 
-Calculates the total weight lifted by a user.
+Calculates the total weight lifted by a user across all exercises.
 
 ```python
 def get_total_weight_lifted(self, user_id)
@@ -538,7 +663,10 @@ def get_following(self, user_id)
 - `user_id` (str): UUID of the user
 
 **Returns:**
-- List of tuples containing following information, or None if an error occurs
+- List of tuples containing following information, or None if an error occurs. Each tuple contains:
+  - `id` (str): UUID of the followed user
+  - `name` (str): Name of the followed user
+  - `profile_picture_url` (str): S3 key for the followed user's profile picture
 
 **Example:**
 ```python
@@ -578,16 +706,7 @@ def get_workout_feed(self, user_id, limit=20, offset=0, include_viewed=False)
 - `include_viewed` (bool, optional): Whether to include already viewed workouts
 
 **Returns:**
-- List of tuples containing feed information, or None if an error occurs. Each tuple contains:
-  - `id` (str): UUID of the workout
-  - `exercise` (str): Name of the exercise
-  - `sets` (int): Number of sets
-  - `reps` (int): Number of repetitions
-  - `weight` (float): Weight used
-  - `date` (datetime): Date of the workout
-  - `user_id` (str): UUID of the user who performed the workout
-  - `name` (str): Name of the user who performed the workout
-  - `profile_picture_url` (str): S3 key for the user's profile picture
+- List of tuples containing feed information, or None if an error occurs
 
 **Example:**
 ```python
