@@ -11,55 +11,47 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
 
-  // Controllers for username and password login
+  // Controllers for username/password login
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Handle login with username and password
   Future<void> _handleUsernamePasswordLogin() async {
     try {
-      // Placeholder: Replace with actual backend call to verify username/password.
       final success = await _authService.signInWithUsernamePassword(
         _usernameController.text,
         _passwordController.text,
       );
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
       if (success) {
-        Navigator.pushReplacementNamed(context, '/home');
+        // Replace the entire stack with MainScreen → no back arrow
+        Navigator.pushReplacementNamed(context, '/main');
       } else {
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login failed: Invalid username or password.")),
         );
       }
     } catch (error) {
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      debugPrint("Username/Password login exception: $error");
-      messenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("An error occurred during login.")),
       );
     }
   }
 
-  // Handle Google Sign-In (existing implementation)
   Future<void> _handleGoogleSignIn() async {
     try {
       final success = await _authService.signInWithGoogle();
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
       if (success) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/main');
       } else {
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Google sign-in failed.")),
         );
       }
     } catch (error) {
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      debugPrint("Google sign-in exception: $error");
-      messenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("An error occurred during Google sign-in.")),
       );
     }
@@ -75,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      // no AppBar here, so no back arrow
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
@@ -83,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'Welcome to Fitness Tracker!',
+                'Welcome to Lit Fitt!',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -92,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 40),
 
-              // Username/Password login section
+              // Username / Password fields...
               TextField(
                 controller: _usernameController,
                 style: const TextStyle(color: Colors.white),
@@ -137,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Divider(color: Colors.white),
               const SizedBox(height: 40),
 
-              // Google Sign-In button
+              // Google Sign-In
               ElevatedButton.icon(
                 onPressed: _handleGoogleSignIn,
                 icon: const Icon(Icons.login),
@@ -147,16 +139,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   foregroundColor: Colors.white,
                 ),
               ),
+
               const SizedBox(height: 20),
 
-              // Sign Up option
+              // Sign-Up link-style button
               TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 onPressed: () {
-                  Navigator.pushNamed(context, '/signup');
+                  // Replace login screen with signup screen → no back arrow
+                  Navigator.pushReplacementNamed(context, '/signup');
                 },
                 child: const Text(
                   "Don't have an account? Sign Up",
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
             ],
