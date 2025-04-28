@@ -1,6 +1,3 @@
-Below is the complete updated README.md file as one continuous file:
-
-```markdown
 # Cloud Computing - Fitness Tracker
 
 This repository contains the source code for the Cloud Computing - Fitness Tracker project—a scalable mobile fitness tracking application designed to log workouts, monitor health metrics, and provide personalized workout recommendations.
