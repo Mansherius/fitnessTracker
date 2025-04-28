@@ -1,4 +1,5 @@
 // lib/screens/home/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fitt_tracker/services/feed_service.dart';
@@ -36,137 +37,167 @@ class _HomeScreenState extends State<HomeScreen> {
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
-        final feed = snapshot.data!;
-        // Sort newest first
-        feed.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        final feed = snapshot.data!..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
         return ListView.builder(
-          padding: const EdgeInsets.only(bottom: 80), // leave room for nav bar
+          padding: const EdgeInsets.only(bottom: 80),
           itemCount: feed.length,
           itemBuilder: (context, index) {
             final item = feed[index];
+
+            // Only show first 3 exercises in summary
+            final summaryExercises = item.exercises.take(3).toList();
+            final remainingCount = item.exercises.length - summaryExercises.length;
+
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
               child: Card(
                 color: Colors.grey[900],
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                shape: RoundedRectangleBorder(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                ),
-                child: ExpansionTile(
-                  tilePadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
-                  childrenPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
-                  backgroundColor: Colors.grey[850],
-                  iconColor: Colors.white,
-                  collapsedIconColor: Colors.white,
-                  title: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundImage:
-                            NetworkImage(item.profilePicUrl),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.username,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            DateFormat('MMM d, y – h:mm a')
-                                .format(item.timestamp),
-                            style: TextStyle(
-                              color: Colors.grey[400], fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  children: [
-                    // Workout header
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        item.workoutTitle,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Stats row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  onTap: () {
+                    // Navigate to your workout detail screen. Pass postId.
+                    Navigator.pushNamed(
+                      context,
+                      '/workoutDetail',
+                      arguments: item.postId,
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            const Text('Time', style: TextStyle(color: Colors.grey)),
-                            Text(_formatDuration(item.duration),
-                              style: const TextStyle(color: Colors.white)),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            const Text('Volume', style: TextStyle(color: Colors.grey)),
-                            Text('${item.volumeKg.toStringAsFixed(1)} kg',
-                              style: const TextStyle(color: Colors.white)),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            const Text('Records', style: TextStyle(color: Colors.grey)),
-                            Row(
-                              children: [
-                                Text('${item.records}',
-                                  style: const TextStyle(color: Colors.white)),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.emoji_events,
-                                    color: Colors.amber, size: 16),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Exercise summary
-                    ...item.exercises.map((e) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
+                        // Header: avatar + name + timestamp
+                        Row(
                           children: [
                             CircleAvatar(
-                              radius: 16,
-                              backgroundImage: AssetImage(e.iconUrl),
+                              radius: 18,
+                              backgroundImage: NetworkImage(item.profilePicUrl),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Text(
-                                e.setsDescription,
-                                style: const TextStyle(color: Colors.white),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.username,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    DateFormat('MMM d, y - h:mm a').format(item.timestamp),
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }).toList(),
 
-                    // “See X more…” if collapsed (but with ExpansionTile it’s automatic)
-                  ],
+                        const SizedBox(height: 12),
+
+                        // Workout title
+                        Text(
+                          item.workoutTitle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Stats row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Time', style: TextStyle(color: Colors.grey)),
+                                Text(
+                                  _formatDuration(item.duration),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Volume', style: TextStyle(color: Colors.grey)),
+                                Text(
+                                  '${item.volumeKg.toStringAsFixed(1)} kg',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Records', style: TextStyle(color: Colors.grey)),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${item.records}',
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.emoji_events,
+                                        color: Colors.amber, size: 16),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // First 3 exercises
+                        ...summaryExercises.map((e) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundImage: AssetImage(e.iconUrl),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    e.setsDescription,
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+
+                        // "See X more exercises"
+                        if (remainingCount > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'See $remainingCount more exercises',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             );

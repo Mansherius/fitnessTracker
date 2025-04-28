@@ -1,48 +1,81 @@
-// lib/screens/workout/workout_screen.dart
-import 'package:flutter/material.dart';
+// lib/services/routine_service.dart
 
-class WorkoutScreen extends StatelessWidget {
-  const WorkoutScreen({super.key});
+import 'dart:async';
+import 'package:fitt_tracker/utils/routine.dart';
+import 'package:fitt_tracker/utils/exercise_in_routine.dart';
 
-  void _startWorkout(BuildContext context, String workoutName) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Start $workoutName?'),
-        content: const Text('This will track your sets and reps.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              // Insert workout tracking logic here
-              Navigator.pop(ctx);
-            },
-            child: const Text('Start'),
+/// Stubbed service for loading and mutating the user’s saved routines.
+class RoutinesService {
+  /// Simulates fetching the list of routines from your backend.
+  Future<List<Routine>> fetchMyWorkouts() async {
+    await Future.delayed(const Duration(seconds: 1));
+    return [
+      Routine(
+        id: 'r1',
+        name: 'Push Day',
+        exercises: [
+          ExerciseInRoutine(
+            id: 'e1',
+            name: 'Bench Press',
+            iconUrl: 'assets/images/bench_press.png',
+            sets: 5,
+            reps: 5,
+            weight: 100.0,
+          ),
+          ExerciseInRoutine(
+            id: 'e2',
+            name: 'Overhead Press',
+            iconUrl: 'assets/images/ohp.png',
+            sets: 4,
+            reps: 8,
+            weight: 60.0,
           ),
         ],
       ),
-    );
+      Routine(
+        id: 'r2',
+        name: 'Pull Day',
+        exercises: [
+          ExerciseInRoutine(
+            id: 'e3',
+            name: 'Pull-Up',
+            iconUrl: 'assets/images/pull_up.png',
+            sets: 5,
+            reps: 5,
+            weight: 0.0,
+          ),
+          ExerciseInRoutine(
+            id: 'e4',
+            name: 'Barbell Row',
+            iconUrl: 'assets/images/row.png',
+            sets: 4,
+            reps: 8,
+            weight: 80.0,
+          ),
+        ],
+      ),
+      // …add more Routines here as needed…
+    ];
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final workouts = ['Chest & Triceps', 'Back & Biceps', 'Leg Day'];
+  /// Simulates creating a new routine on your backend.
+  Future<void> createRoutine(Routine routine) async {
+    await Future.delayed(const Duration(seconds: 1));
+    // TODO: send HTTP POST to your API
+    print('🔄 createRoutine: ${routine.name} with ${routine.exercises.length} exercises');
+  }
 
-    return Scaffold(
-      body: ListView.builder(
-        itemCount: workouts.length,
-        itemBuilder: (context, index) {
-          final workout = workouts[index];
-          return ListTile(
-            title: Text(workout),
-            subtitle: const Text('Brief description here'),
-            trailing: IconButton(
-              icon: const Icon(Icons.play_circle_fill),
-              onPressed: () => _startWorkout(context, workout),
-            ),
-          );
-        },
-      ),
-    );
+  /// Simulates updating an existing routine.
+  Future<void> updateRoutine(Routine routine) async {
+    await Future.delayed(const Duration(seconds: 1));
+    // TODO: send HTTP PUT/PATCH to your API
+    print('🔄 updateRoutine: ${routine.id} → ${routine.name}');
+  }
+
+  /// Simulates deleting a routine by its id.
+  Future<void> deleteRoutine(String routineId) async {
+    await Future.delayed(const Duration(seconds: 1));
+    // TODO: send HTTP DELETE to your API
+    print('🔄 deleteRoutine: $routineId');
   }
 }

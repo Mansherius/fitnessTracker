@@ -1,3 +1,5 @@
+// lib/screens/main_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/services/auth_service.dart';
 import 'package:fitt_tracker/utils/session_manager.dart';
@@ -26,10 +28,9 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _handleSignOut() async {
-    final authService = AuthService();
-    await authService.signOutGoogle();
+    await AuthService().signOutGoogle();
     await SessionManager.clearSession();
-    if (!mounted) return; // ← guard against using context after unmount
+    if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
   }
 
@@ -37,7 +38,8 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fitness Tracker'),
+        automaticallyImplyLeading: false,
+        title: const Text('Fit Litt'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -46,16 +48,13 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: IndexedStack(index: _selectedIndex, children: _pages),
-      floatingActionButton:
-          _selectedIndex == 0
-              ? FloatingActionButton(
-                onPressed: () {
-                  // TODO: add new workout action
-                },
-                child: const Icon(Icons.add),
-              )
-              : null,
+
+      // Swap pages in place; bottom nav stays put.
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
+
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         showSelectedLabels: false,
@@ -64,28 +63,9 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(
-            // Align the icon to the bottom of the bar’s icon area
-            icon: Align(
-              alignment: Alignment.bottomCenter,
-              child: Icon(Icons.home),
-            ),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Align(
-              alignment: Alignment.bottomCenter,
-              child: Icon(Icons.fitness_center),
-            ),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Align(
-              alignment: Alignment.bottomCenter,
-              child: Icon(Icons.person),
-            ),
-            label: '',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
       ),
     );

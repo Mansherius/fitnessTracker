@@ -9,278 +9,210 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  // Form key for validation
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers for the form fields
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _dobController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  // Controllers for the required fields
+  final TextEditingController _nameController     = TextEditingController();
+  final TextEditingController _emailController    = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _ageController      = TextEditingController();
+  final TextEditingController _genderController   = TextEditingController();
 
-  // Variables for async validation results (false means invalid, true means valid)
-  // We initialize them as false since blank is not allowed.
-  bool _isUsernameAvailable = false;
+  // Allowed gender options
+  static const List<String> _genderOptions = [
+    'Male',
+    'Female',
+    'Other',
+  ];
+
+  // Async validation flag for email uniqueness
   bool _isEmailAvailable = false;
-  bool _isPhoneValid = false;
 
-  // Loading state for sign-up process
+  // Loading state
   bool _isLoading = false;
 
-  // Helper widget: returns a suffix icon based on validation result.
-  Widget _buildValidationIcon(bool isValid) {
-    return Icon(
-      isValid ? Icons.check : Icons.close,
-      color: isValid ? Colors.green : Colors.red,
-    );
-  }
-
-  // Dummy backend simulation: Check if username is available.
-  Future<void> _checkUsernameAvailability(String username) async {
-    if (username.isEmpty) {
-      setState(() => _isUsernameAvailable = false);
-      return;
-    }
-    // Simulate a backend call delay
-    bool available = await Future.delayed(const Duration(milliseconds: 500), () {
-      // For demo: "admin", "user", and "test" are considered taken.
-      return !(username.toLowerCase() == "admin" ||
-          username.toLowerCase() == "user" ||
-          username.toLowerCase() == "test");
-    });
-    setState(() => _isUsernameAvailable = available);
-  }
-
-  // Dummy backend simulation: Check if email is available.
   Future<void> _checkEmailAvailability(String email) async {
     if (email.isEmpty) {
       setState(() => _isEmailAvailable = false);
       return;
     }
-    bool available = await Future.delayed(const Duration(milliseconds: 500), () {
-      // For demo: "example@example.com" is already in use.
-      return !(email.toLowerCase() == "example@example.com");
-    });
+    bool available = await Future.delayed(
+      const Duration(milliseconds: 500),
+      () => email.toLowerCase() != 'taken@example.com',
+    );
     setState(() => _isEmailAvailable = available);
   }
 
-  // Dummy validation: Check if phone number is valid.
-  Future<void> _checkPhoneValidity(String phone) async {
-    if (phone.isEmpty) {
-      setState(() => _isPhoneValid = false);
-      return;
-    }
-    // For demo: phone number is valid if it has exactly 10 digits.
-    bool valid = RegExp(r'^\d{10}$').hasMatch(phone);
-    // Simulate a small delay as if checking with a backend.
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() => _isPhoneValid = valid);
+  Future<void> _submitToBackend(Map<String, dynamic> payload) async {
+    debugPrint('Sign-up payload: $payload');
+    await Future.delayed(const Duration(seconds: 1));
   }
 
-  // Function to open a date picker for DOB selection
-  Future<void> _selectDate() async {
-    DateTime initialDate = DateTime(2000, 1, 1);
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        _dobController.text = "${picked.year}-${picked.month}-${picked.day}";
-      });
-    }
-  }
-
-  // Function to handle sign up
   Future<void> _handleSignUp() async {
-    // Ensure all async validations are up-to-date.
-    await _checkUsernameAvailability(_usernameController.text);
-    await _checkEmailAvailability(_emailController.text);
-    await _checkPhoneValidity(_phoneController.text);
+    await _checkEmailAvailability(_emailController.text.trim());
 
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!_formKey.currentState!.validate()) return;
 
-      // API call placeholder:
-      // final response = await AuthService.signUp(
-      //   name: _nameController.text,
-      //   username: _usernameController.text,
-      //   dob: _dobController.text,
-      //   email: _emailController.text,
-      //   phone: _phoneController.text,
-      //   password: _passwordController.text,
-      // );
-      // Handle the response accordingly.
+    setState(() => _isLoading = true);
 
-      // Simulate a short wait time (e.g., network call delay)
-      await Future.delayed(const Duration(seconds: 2));
-      setState(() => _isLoading = false);
+    final now = DateTime.now().toIso8601String();
+    final payload = {
+      'name': _nameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'password_hash': _passwordController.text,
+      'age': int.parse(_ageController.text.trim()),
+      'gender': _genderController.text.trim(),
+      'created_at': now,
+      'updated_at': now,
+    };
 
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
-    }
+    await _submitToBackend(payload);
+
+    setState(() => _isLoading = false);
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/main');
   }
 
   @override
   void dispose() {
-    // Dispose of controllers when no longer needed
     _nameController.dispose();
-    _usernameController.dispose();
-    _dobController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
+    _ageController.dispose();
+    _genderController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // List of allowed email domains.
-    const allowedDomains = ["@gmail.com", "@yahoo.com", "@hotmail.com"];
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Sign Up")),
+      // no back arrow
+      appBar: AppBar(automaticallyImplyLeading: false, title: const Text('Sign Up')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Name Field
+              // Name
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: "Name",
+                  labelText: 'Name',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your name";
-                  }
-                  return null;
-                },
+                validator: (v) => (v == null || v.isEmpty) ? 'Please enter your name' : null,
               ),
               const SizedBox(height: 16),
-              // Username Field with validation icon and async check on change.
-              TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: "Username",
-                  border: const OutlineInputBorder(),
-                  suffixIcon: _buildValidationIcon(_isUsernameAvailable),
-                ),
-                onChanged: (value) => _checkUsernameAvailability(value),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter a username";
-                  }
-                  if (!_isUsernameAvailable) {
-                    return "Username is taken";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              // Date of Birth Field (read-only with date picker)
-              TextFormField(
-                controller: _dobController,
-                decoration: const InputDecoration(
-                  labelText: "Date of Birth",
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                readOnly: true,
-                onTap: _selectDate,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please select your date of birth";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              // Email Field with async validation check and allowed domain check.
+
+              // Email
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
-                  labelText: "Email ID",
+                  labelText: 'Email',
                   border: const OutlineInputBorder(),
-                  suffixIcon: _buildValidationIcon(_isEmailAvailable),
+                  suffixIcon: Icon(
+                    _isEmailAvailable ? Icons.check : Icons.close,
+                    color: _isEmailAvailable ? Colors.green : Colors.red,
+                  ),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                onChanged: (value) => _checkEmailAvailability(value),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your email";
+                onChanged: _checkEmailAvailability,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Please enter your email';
+                  if (!RegExp(r'\S+@\S+\.\S+').hasMatch(v)) {
+                    return 'Please enter a valid email';
                   }
-                  // Basic email pattern check.
-                  if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                    return "Please enter a valid email";
-                  }
-                  // Check that email ends with an allowed domain.
-                  bool validDomain = allowedDomains.any(
-                    (domain) => value.toLowerCase().endsWith(domain),
-                  );
-                  if (!validDomain) {
-                    return "Email must end with one of: ${allowedDomains.join(", ")}";
-                  }
-                  if (!_isEmailAvailable) {
-                    return "Email is already in use";
-                  }
+                  if (!_isEmailAvailable) return 'Email already in use';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
-              // Phone Number Field with validation icon.
-              TextFormField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                  labelText: "Phone Number",
-                  border: const OutlineInputBorder(),
-                  suffixIcon: _buildValidationIcon(_isPhoneValid),
-                ),
-                keyboardType: TextInputType.phone,
-                onChanged: (value) => _checkPhoneValidity(value),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your phone number";
-                  }
-                  if (!_isPhoneValid) {
-                    return "Phone number is invalid";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              // Password Field.
+
+              // Password
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(
-                  labelText: "Password",
+                  labelText: 'Password',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please set a password";
-                  }
-                  if (value.length < 6) {
-                    return "Password must be at least 6 characters";
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Please set a password';
+                  if (v.length < 6) return 'Password must be at least 6 characters';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Age
+              TextFormField(
+                controller: _ageController,
+                decoration: const InputDecoration(
+                  labelText: 'Age',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Please enter your age';
+                  final age = int.tryParse(v);
+                  if (age == null || age < 12 || age > 100) {
+                    return 'Age must be between 12 and 100';
                   }
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+
+              // Gender with autocomplete suggestions
+              Autocomplete<String>(
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  return _genderOptions.where((opt) {
+                    return opt.toLowerCase().startsWith(
+                      textEditingValue.text.toLowerCase(),
+                    );
+                  });
+                },
+                onSelected: (String selection) {
+                  _genderController.text = selection;
+                },
+                fieldViewBuilder:
+                    (context, textController, focusNode, onSubmitted) {
+                  textController.text = _genderController.text;
+                  return TextFormField(
+                    controller: textController,
+                    focusNode: focusNode,
+                    decoration: const InputDecoration(
+                      labelText: 'Gender',
+                      hintText: 'Male, Female, or Other',
+                      border: OutlineInputBorder(),
+                    ),
+                    onFieldSubmitted: (value) => onSubmitted(),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Please enter your gender';
+                      if (!_genderOptions.contains(v.trim())) {
+                        return 'Must be: Male, Female or Other';
+                      }
+                      return null;
+                    },
+                  );
+                },
+              ),
               const SizedBox(height: 24),
-              // Sign Up Button or Loading Indicator.
+
+              // Submit
               _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _handleSignUp,
-                      child: const Text("Sign Up"),
+                  ? const Center(child: CircularProgressIndicator())
+                  : SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _handleSignUp,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Text('Sign Up'),
+                        ),
+                      ),
                     ),
             ],
           ),
