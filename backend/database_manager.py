@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from database_connector import DatabaseConnector
 from s3_manager import S3Manager
+import os, json
 
 class DatabaseManager:
     def __init__(self):
@@ -132,6 +133,27 @@ class DatabaseManager:
             return
 
     # Workout Management
+    
+    def get_exercise_list(self, category=None):
+        try:
+            file_path = os.path.join(os.path.dirname(__file__), 'exercises.json')
+            
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+            
+            exercises = data.get('exercises', [])
+            
+            if category:
+                exercises = [ex for ex in exercises if ex['category'] == category]
+            
+            exercises.sort(key=lambda x: (x['category'], x['name']))
+            
+            return exercises
+
+        except Exception as e:
+            print(f"Error loading exercise list: {e}")
+            return []
+
     def start_workout(self, user_id, date, name=None, notes=None):
         try:
             workout_id = uuid.uuid4()
@@ -481,6 +503,7 @@ class DatabaseManager:
         except Exception as e:
             print(f"An error occurred while fetching leaderboard: {e}")
             return None
+    
     def get_user_ranking(self, user_id):
         query = "SELECT rank() OVER (ORDER BY total_weight_lifted DESC) FROM leaderboard WHERE user_id = %s"
         params = (user_id,)

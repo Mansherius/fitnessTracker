@@ -176,6 +176,26 @@ def clear_profile_picture(self, user_id)
 
 ## Workout Management
 
+### get_exercise_list
+
+Retrieves a list of all exercises from a category.
+
+```python
+def get_exercise_list(self, category=None)
+```
+
+**Parameters:**
+- `category` (str, optional): Category of exercises (e.g., "strength", "cardio")
+
+**Returns:**
+- List of dictionaries containing exercise name, description, and category, or None if an error occurs
+
+**Example:**
+```python
+exercises = dbm.get_exercise_list(category="strength")
+# Results contain: name, description, category of exercises with category "strength"
+```
+
 ### start_workout
 
 Starts a new workout session for a user.
