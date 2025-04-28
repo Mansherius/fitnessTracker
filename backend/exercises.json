@@ -1,0 +1,74 @@
+{
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "category": "Chest",
+        "description": "Flat barbell bench press targeting chest, shoulders, and triceps."
+      },
+      {
+        "name": "Incline Bench Press",
+        "category": "Chest",
+        "description": "Targets upper chest using an inclined bench."
+      },
+      {
+        "name": "Squat",
+        "category": "Legs",
+        "description": "Compound lower body exercise targeting quads, hamstrings, and glutes."
+      },
+      {
+        "name": "Leg Press",
+        "category": "Legs",
+        "description": "Machine exercise targeting quads, hamstrings, and glutes."
+      },
+      {
+        "name": "Pull-Up",
+        "category": "Back",
+        "description": "Upper body compound exercise targeting the lats and biceps."
+      },
+      {
+        "name": "Deadlift",
+        "category": "Back",
+        "description": "Compound exercise targeting multiple muscle groups."
+      },
+      {
+        "name": "Overhead Press",
+        "category": "Shoulders",
+        "description": "Compound exercise targeting the shoulders."
+      },
+      {
+        "name": "Lateral Raise",
+        "category": "Shoulders",
+        "description": "Isolation exercise for the lateral deltoids."
+      },
+      {
+        "name": "Bicep Curl",
+        "category": "Arms",
+        "description": "Isolation exercise for the biceps."
+      },
+      {
+        "name": "Tricep Extension",
+        "category": "Arms",
+        "description": "Isolation exercise for the triceps."
+      },
+      {
+        "name": "Plank",
+        "category": "Core",
+        "description": "Isometric exercise targeting core stability."
+      },
+      {
+        "name": "Russian Twist",
+        "category": "Core",
+        "description": "Rotational exercise for obliques."
+      },
+      {
+        "name": "Running",
+        "category": "Cardio",
+        "description": "Cardiovascular exercise using a treadmill or outdoors."
+      },
+      {
+        "name": "Cycling",
+        "category": "Cardio",
+        "description": "Low-impact cardiovascular exercise."
+      }
+    ]
+  }
