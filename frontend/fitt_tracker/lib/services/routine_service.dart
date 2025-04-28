@@ -1,8 +1,8 @@
 // lib/services/routine_service.dart
 
 import 'dart:async';
-import 'package:fitt_tracker/utils/routine.dart';
-import 'package:fitt_tracker/utils/exercise_in_routine.dart';
+import 'package:fitt_tracker/models/routine.dart';
+import 'package:fitt_tracker/models/exercise_in_routine.dart';
 
 /// Stubbed service for loading and mutating the user’s saved routines.
 class RoutinesService {

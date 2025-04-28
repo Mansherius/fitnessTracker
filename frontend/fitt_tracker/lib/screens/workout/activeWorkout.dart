@@ -1,8 +1,8 @@
 // lib/screens/workout/active_workout_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:fitt_tracker/utils/routine.dart';
-import 'package:fitt_tracker/utils/exercise_in_routine.dart';
+import 'package:fitt_tracker/models/routine.dart';
+import 'package:fitt_tracker/models/exercise_in_routine.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget {
   const ActiveWorkoutScreen({super.key});

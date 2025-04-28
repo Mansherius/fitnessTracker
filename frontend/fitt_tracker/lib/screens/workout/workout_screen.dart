@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/services/routine_service.dart';
-import 'package:fitt_tracker/utils/routine.dart';
+import 'package:fitt_tracker/models/routine.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
