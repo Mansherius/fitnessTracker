@@ -1,3 +1,4 @@
+import 'package:fitt_tracker/utils/session_manager.dart';
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 
@@ -17,16 +18,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleUsernamePasswordLogin() async {
     try {
-      final success = await _authService.signInWithUsernamePassword(
+      final response = await _authService.signInWithUsernamePassword(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
       );
+
       if (!mounted) return;
-      if (success) {
-        Navigator.pushReplacementNamed(context, '/main'); // Navigate to the main screen
+
+      if (response != null && response.containsKey('token') && response.containsKey('user_id')) {
+        // Save session token and user ID
+        await SessionManager.saveSession(
+          response['token']!,
+          response['user_id']!,
+        );
+
+        // Navigate to the main screen
+        Navigator.pushReplacementNamed(context, '/main');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login failed: Invalid email or password.")),
+          const SnackBar(
+            content: Text("Login failed: Invalid email or password."),
+          ),
         );
       }
     } catch (error) {
@@ -42,16 +54,21 @@ class _LoginScreenState extends State<LoginScreen> {
       final success = await _authService.signInWithGoogle();
       if (!mounted) return;
       if (success) {
-        Navigator.pushReplacementNamed(context, '/main'); // Navigate to the main screen
+        Navigator.pushReplacementNamed(
+          context,
+          '/main',
+        ); // Navigate to the main screen
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Google sign-in failed.")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Google sign-in failed.")));
       }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("An error occurred during Google sign-in.")),
+        const SnackBar(
+          content: Text("An error occurred during Google sign-in."),
+        ),
       );
     }
   }
@@ -154,9 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
                 child: const Text(
                   "Don't have an account? Sign Up",
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                  ),
+                  style: TextStyle(decoration: TextDecoration.underline),
                 ),
               ),
             ],

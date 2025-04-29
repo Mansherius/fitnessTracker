@@ -1,45 +1,60 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:logger/logger.dart';
+import 'package:uuid/uuid.dart'; // Add this package for generating unique tokens
 import 'package:fitt_tracker/utils/session_manager.dart';
+import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
   final Logger _logger = Logger();
   final String _baseUrl = 'http://51.20.171.163:8000';
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final Uuid _uuid = Uuid(); // For generating unique tokens
 
   /// Username/Password login
-  Future<bool> signInWithUsernamePassword(String email, String password) async {
+  Future<Map<String, String>?> signInWithUsernamePassword(String email, String password) async {
     final uri = Uri.parse('$_baseUrl/login');
     final payload = {
       'email': email,
-      'password': password,
+      'password_hash': password, // Ensure this matches the backend's expected key
     };
 
     try {
+      _logger.i('Sending login request to $uri with payload: $payload');
+
       final response = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
 
+      _logger.i('Received response: ${response.statusCode} - ${response.body}');
+
       if (response.statusCode == 200) {
         final responseBody = jsonDecode(response.body);
-        final token = responseBody['token']; // Assuming the backend returns a token
-        await SessionManager.saveSession(token); // Save the token for future use
-        return true;
+        final userId = responseBody['user_id']; // Extract user_id from the response
+
+        // Generate a local token
+        final token = _uuid.v4(); // Generate a unique token using UUID
+
+        // Save the session token and user ID
+        await SessionManager.saveSession(token, userId);
+
+        return {
+          'token': token, // Return the generated token
+          'user_id': userId, // Return the user ID
+        };
       } else {
         _logger.w('Login failed: ${response.body}');
-        return false;
+        return null;
       }
     } catch (error, stackTrace) {
       _logger.e('Username/Password sign-in error', error: error, stackTrace: stackTrace);
-      return false;
+      return null;
     }
   }
 
-  /// Google sign-in
+  /// Google Sign-In
   Future<bool> signInWithGoogle() async {
     try {
       final account = await _googleSignIn.signIn();
@@ -58,8 +73,13 @@ class AuthService {
 
         if (response.statusCode == 200) {
           final responseBody = jsonDecode(response.body);
-          final backendToken = responseBody['token']; // Token from your backend
-          await SessionManager.saveSession(backendToken); // Save the backend token
+          final userId = responseBody['user_id']; // Extract user ID from the backend response
+
+          // Generate a local token
+          final localToken = _uuid.v4(); // Generate a unique token using UUID
+
+          // Save the session token and user ID
+          await SessionManager.saveSession(localToken, userId);
           return true;
         } else {
           _logger.w('Google sign-in backend verification failed: ${response.body}');
