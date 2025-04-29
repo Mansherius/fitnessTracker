@@ -1,5 +1,3 @@
-// lib/screens/profile/profile_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fitt_tracker/services/profile_service.dart';
@@ -120,7 +118,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // split into two lines
                       Row(
                         children: [
                           Text(
@@ -135,12 +132,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        "Workouts: ${_workoutHistory.length}",
-                        style: const TextStyle(color: Colors.white),
+                      Row(
+                        children: [
+                          Text(
+                            "Workouts: ${_workoutHistory.length}",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            "Beginner", // Replace with the actual fitness level from the backend
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.white),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/edit-preferences');
+                  },
                 ),
               ],
             ),
@@ -178,7 +194,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 32),
 
             // ─── Workout History (feed-style cards) ──────────────────────
-            // ─── Workout History (feed-style cards) ──────────────────────
             const Text(
               "Workout History",
               style: TextStyle(
@@ -200,7 +215,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: GestureDetector(
                     onTap: () {
-                      // Navigate to your workout detail screen:
                       Navigator.pushNamed(
                         context,
                         '/workoutDetail',

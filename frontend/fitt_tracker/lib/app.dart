@@ -1,3 +1,4 @@
+import 'package:fitt_tracker/screens/profile/edit_preferences_screen.dart';
 import 'package:fitt_tracker/screens/workout/activeWorkout.dart';
 import 'package:fitt_tracker/screens/workout/create_routine_screen.dart';
 import 'package:flutter/material.dart';
@@ -84,6 +85,7 @@ class _MyAppState extends State<MyApp> {
         '/activeWorkout': (context) => const ActiveWorkoutScreen(),
         '/emptyWorkout': (_) => const EmptyWorkoutScreen(),
         '/createRoutine': (context) => const CreateRoutineScreen(),
+        '/edit-preferences': (context) => const EditPreferencesScreen(),
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(
