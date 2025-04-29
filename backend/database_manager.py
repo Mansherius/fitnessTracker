@@ -45,6 +45,19 @@ class DatabaseManager:
         except Exception as e:
             print(f"An error occurred while adding user {name}: {e}")
             return
+    
+    def user_login(self, email, password_hash):
+        try:
+            query = "SELECT id FROM users WHERE email = %s AND password_hash = %s"
+            params = (email, password_hash)
+            result = self.connector.execute_query(query, params, commit=False, fetch=True)
+            if result and result[0][0]:
+                return result[0][0]
+            return None
+        except Exception as e:
+            print(f"An error occurred during user login: {e}")
+            return None
+
 
     def get_user_profile(self, user_id):
         try:
