@@ -38,6 +38,21 @@ def get_user_profile(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+    
+@app.route('/login', methods=['POST'])
+def user_login():
+    data = request.json
+    try:
+        user_id = db_manager.user_login(
+            email=data['email'],
+            password_hash=data['password_hash']
+        )
+        if user_id:
+            return jsonify({"message": "Login successful", "user_id": user_id}), 200
+        return jsonify({"error": "Invalid email or password"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @app.route('/users/<user_id>', methods=['PUT'])
 def update_user_profile(user_id):
     data = request.json
