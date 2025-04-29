@@ -46,18 +46,6 @@ class DatabaseManager:
             print(f"An error occurred while adding user {name}: {e}")
             return
 
-    def user_login(self, email, password_hash):
-        try:
-            query = "SELECT id FROM users WHERE email = %s AND password_hash = %s"
-            params = (email, password_hash)
-            result = self.connector.execute_query(query, params, commit=False, fetch=True)
-            if result and result[0][0]:
-                return result[0][0]
-            return None
-        except Exception as e:
-            print(f"An error occurred during user login: {e}")
-            return None
-
     def get_user_profile(self, user_id):
         try:
             query = "SELECT * FROM users WHERE id = %s"
@@ -166,14 +154,14 @@ class DatabaseManager:
             print(f"Error loading exercise list: {e}")
             return []
 
-    def start_workout(self, user_id, date, name=None, notes=None):
+    def start_workout(self, user_id, date, name=None, notes=None, routine=0):
         try:
             workout_id = uuid.uuid4()
             query = """
-                INSERT INTO workouts (id, user_id, date, name, notes)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO workouts (id, user_id, date, name, notes, routine)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """
-            params = (str(workout_id), user_id, date, name, notes)
+            params = (str(workout_id), user_id, date, name, notes, routine)
             self.connector.execute_query(query, params)
             print(f"Workout session started for user {user_id}.")
             return str(workout_id)
@@ -181,7 +169,7 @@ class DatabaseManager:
             print(f"An error occurred while starting workout for user {user_id}: {e}")
             return None
 
-    def add_exercise(self, workout_id, exercise, sets, reps, weight):
+    def log_exercise(self, workout_id, exercise, sets, reps, weight):
         try:
             exercise_id = uuid.uuid4()
             query = """
@@ -277,6 +265,24 @@ class DatabaseManager:
             return workouts
         except Exception as e:
             print(f"An error occurred while fetching workouts for user {user_id}: {e}")
+            return None
+
+    def get_user_routines(self, user_id):
+        try:
+            query = """
+                SELECT w.id
+                FROM workouts w
+                WHERE w.user_id = %s AND w.routine = 1
+                GROUP BY w.id
+                ORDER BY w.date DESC
+            """
+            params = (user_id,)
+            routines_list = self.connector.execute_query(query, params, commit=False, fetch=True)
+            routines = [self.get_workout_details(routine_id) for routine_id in routines_list]
+            return routines
+        
+        except Exception as e:
+            print(f"An error occurred while fetching routines for user {user_id}: {e}")
             return None
 
     def update_workout(self, workout_id, date=None, name=None, notes=None):
