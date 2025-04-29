@@ -181,7 +181,7 @@ class DatabaseManager:
             print(f"An error occurred while starting workout for user {user_id}: {e}")
             return None
 
-    def log_exercise(self, workout_id, exercise, sets, reps, weight):
+    def add_exercise(self, workout_id, exercise, sets, reps, weight):
         try:
             exercise_id = uuid.uuid4()
             query = """

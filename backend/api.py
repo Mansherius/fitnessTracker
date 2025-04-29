@@ -1,17 +1,20 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from database_manager import DatabaseManager
+from database_manager import DatabaseManager, ProfilePictureHandler
 from s3_manager import S3Manager
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for cross-origin requests (e.g., from Flutter)
 
 db_manager = DatabaseManager()
+picture_handler = ProfilePictureHandler()
 s3_manager = S3Manager()
 
 # ------------------ User Management ------------------
 
-@app.route('/users', methods=['POST'])
+#add user from USERS
+
+@app.route('/users', methods=['POST'])  
 def add_user():
     data = request.json
     try:
@@ -27,6 +30,7 @@ def add_user():
         return jsonify({"message": "User added successfully"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
 
 @app.route('/users/<user_id>', methods=['GET'])
 def get_user_profile(user_id):
@@ -83,8 +87,7 @@ def upload_profile_picture(user_id):
         file = request.files['file']
         content_type = file.content_type
         image_data = file.read()
-        url = s3_manager.upload_file(user_id, image_data, content_type)
-        db_manager.update_profile_picture(user_id, profile_picture_key=url)
+        url = picture_handler.upload_profile_picture(user_id, image_data, content_type)
         return jsonify({"url": url}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -92,7 +95,7 @@ def upload_profile_picture(user_id):
 @app.route('/users/<user_id>/profile-picture', methods=['GET'])
 def get_profile_picture_url(user_id):
     try:
-        url = db_manager.get_profile_picture_key(user_id)
+        url = picture_handler.get_profile_picture_key(user_id)
         if url:
             return jsonify({"url": url}), 200
         return jsonify({"error": "Profile picture not found"}), 404
@@ -102,7 +105,8 @@ def get_profile_picture_url(user_id):
 @app.route('/users/<user_id>/profile-picture', methods=['DELETE'])
 def delete_profile_picture(user_id):
     try:
-        success = db_manager.clear_profile_picture(user_id)
+        success = picture_handler.delete_profile_picture(user_id)
+
         if success:
             return jsonify({"message": "Profile picture deleted"}), 200
         return jsonify({"error": "Failed to delete profile picture"}), 400
@@ -112,7 +116,7 @@ def delete_profile_picture(user_id):
 # ------------------ Workouts ------------------
 
 @app.route('/workouts', methods=['POST'])
-def add_workout():
+def start_workout():
     data = request.json
     try:
         workout_id = db_manager.start_workout(
@@ -126,7 +130,7 @@ def add_workout():
         return jsonify({"error": str(e)}), 400
 
 @app.route('/workouts/<user_id>', methods=['GET'])
-def get_workouts(user_id):
+def get_user_workouts(user_id):
     try:
         workouts = db_manager.get_user_workouts(user_id)
         return jsonify(workouts), 200
@@ -158,6 +162,94 @@ def delete_workout(workout_id):
         return jsonify({"error": "Failed to delete workout"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+# get list of exercises from WORKOUTS    
+    
+@app.route('/workouts/<workout_id>/exercises', methods=['GET'])
+def get_workout_exercises(workout_id):
+    try:
+        exercises = db_manager.get_workout_exercises(workout_id)
+        return jsonify(exercises), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+# get workout details from WORKOUTS
+    
+@app.route('/workouts/details/<workout_id>', methods=['GET'])
+def get_workout_details(workout_id):
+    try:
+        workout = db_manager.get_workout_details(workout_id)
+        if workout:
+            return jsonify(workout), 200
+        return jsonify({"error": "Workout not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+# ------------------ Exercises ------------------
+
+#get list of exercises from EXERCISES
+
+@app.route('/exercises', methods=['GET'])
+def get_exercise_list():
+    category = request.args.get('category')
+    try:
+        exercises = db_manager.get_exercise_list(category)
+        return jsonify(exercises), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+#add an exercise in a workout 
+
+@app.route('/exercises', methods=['POST'])
+def add_exercise():
+    data = request.json
+    try:
+        exercise_id = db_manager.add_exercise(
+            workout_id=data['workout_id'],
+            exercise=data['exercise'],
+            sets=data['sets'],
+            reps=data['reps'],
+            weight=data['weight']
+        )
+        if exercise_id:
+            return jsonify({"message": "Exercise logged", "exercise_id": exercise_id}), 201
+        return jsonify({"error": "Failed to log exercise"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+#update exercise in a workout 
+@app.route('/exercises/<exercise_id>', methods=['PUT'])
+def update_exercise(exercise_id):
+    data = request.json
+    try:
+        success = db_manager.update_exercise(
+            exercise_id=exercise_id,
+            exercise=data.get('exercise'),
+            sets=data.get('sets'),
+            reps=data.get('reps'),
+            weight=data.get('weight')
+        )
+        if success:
+            return jsonify({"message": "Exercise updated"}), 200
+        return jsonify({"error": "No updates provided or update failed"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+
+
+@app.route('/exercises/<exercise_id>', methods=['DELETE'])
+def delete_exercise(exercise_id):
+    try:
+        success = db_manager.delete_exercise(exercise_id)
+        if success:
+            return jsonify({"message": "Exercise deleted"}), 200
+        return jsonify({"error": "Failed to delete exercise"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+
+
 
 # ------------------ Measurements ------------------
 
@@ -255,20 +347,21 @@ def is_following():
 # ------------------ Workout Feed ------------------
 
 @app.route('/feed/<user_id>', methods=['GET'])
-def get_feed(user_id):
+def get_workout_feed(user_id):
     try:
         return jsonify(db_manager.get_workout_feed(user_id)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 @app.route('/feed/viewed', methods=['POST'])
-def mark_feed_viewed():
+def mark_workout_viewed():
     data = request.json
     try:
         db_manager.mark_workout_viewed(data['viewer_id'], data['workout_id'])
         return jsonify({"message": "Marked as viewed"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
 
 # ------------------ Leaderboard ------------------
 
