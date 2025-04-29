@@ -18,16 +18,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleUsernamePasswordLogin() async {
     try {
       final success = await _authService.signInWithUsernamePassword(
-        _usernameController.text,
-        _passwordController.text,
+        _usernameController.text.trim(),
+        _passwordController.text.trim(),
       );
       if (!mounted) return;
       if (success) {
-        // Replace the entire stack with MainScreen → no back arrow
-        Navigator.pushReplacementNamed(context, '/main');
+        Navigator.pushReplacementNamed(context, '/main'); // Navigate to the main screen
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login failed: Invalid username or password.")),
+          const SnackBar(content: Text("Login failed: Invalid email or password.")),
         );
       }
     } catch (error) {
@@ -43,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final success = await _authService.signInWithGoogle();
       if (!mounted) return;
       if (success) {
-        Navigator.pushReplacementNamed(context, '/main');
+        Navigator.pushReplacementNamed(context, '/main'); // Navigate to the main screen
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Google sign-in failed.")),
@@ -75,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'Welcome to Lit Fitt!',
+                'Welcome to Fit Litt!',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -89,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _usernameController,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                  labelText: "Username",
+                  labelText: "Email ",
                   labelStyle: TextStyle(color: Colors.white),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.white),

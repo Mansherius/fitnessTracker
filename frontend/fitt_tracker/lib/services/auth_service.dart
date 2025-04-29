@@ -1,20 +1,70 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logger/logger.dart';
-import 'package:fitt_tracker/utils/session_manager.dart'; // Make sure to import your session manager
+import 'package:fitt_tracker/utils/session_manager.dart';
 
 class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final Logger _logger = Logger();
+  final String _baseUrl = 'http://51.20.171.163:8000';
 
-  /// Returns true if Google sign-in was successful.
+  /// Username/Password login
+  Future<bool> signInWithUsernamePassword(String email, String password) async {
+    final uri = Uri.parse('$_baseUrl/login');
+    final payload = {
+      'email': email,
+      'password': password,
+    };
+
+    try {
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        final token = responseBody['token']; // Assuming the backend returns a token
+        await SessionManager.saveSession(token); // Save the token for future use
+        return true;
+      } else {
+        _logger.w('Login failed: ${response.body}');
+        return false;
+      }
+    } catch (error, stackTrace) {
+      _logger.e('Username/Password sign-in error', error: error, stackTrace: stackTrace);
+      return false;
+    }
+  }
+
+  /// Google sign-in
   Future<bool> signInWithGoogle() async {
     try {
       final account = await _googleSignIn.signIn();
       if (account != null) {
-        // Optionally retrieve and store an authentication token
-        // Here, for testing purposes, we simply save a dummy token.
-        await SessionManager.saveSession("dummy_google_token");
-        return true;
+        // Retrieve Google authentication token
+        final googleAuth = await account.authentication;
+        final token = googleAuth.idToken;
+
+        // Optionally send the token to your backend for verification
+        final uri = Uri.parse('$_baseUrl/google-login');
+        final response = await http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'id_token': token}),
+        );
+
+        if (response.statusCode == 200) {
+          final responseBody = jsonDecode(response.body);
+          final backendToken = responseBody['token']; // Token from your backend
+          await SessionManager.saveSession(backendToken); // Save the backend token
+          return true;
+        } else {
+          _logger.w('Google sign-in backend verification failed: ${response.body}');
+          return false;
+        }
       }
       return false;
     } catch (error, stackTrace) {
@@ -23,48 +73,11 @@ class AuthService {
     }
   }
 
-  /// Temporary username/password login for testing.
-  Future<bool> signInWithUsernamePassword(String username, String password) async {
-    try {
-      // Simulate network delay.
-      await Future.delayed(const Duration(seconds: 1));
-      // For testing, only accept "test" for both username and password.
-      if (username == "test" && password == "test") {
-        // Save a dummy token into your session.
-        await SessionManager.saveSession("dummy_token");
-        return true;
-      }
-      return false;
-    } catch (error, stackTrace) {
-      _logger.e('Username/Password sign-in error', error: error, stackTrace: stackTrace);
-      return false;
-    }
-  }
-
-  /// Simulate a sign-up method.
-  Future<bool> signUp({
-    required String name,
-    required String username,
-    required String dob,
-    required String email,
-    required String phone,
-    required String password,
-  }) async {
-    try {
-      // Simulate a network call delay.
-      await Future.delayed(const Duration(seconds: 2));
-      // For testing, we'll assume sign-up always succeeds and saves a session.
-      await SessionManager.saveSession("dummy_signup_token");
-      return true;
-    } catch (error, stackTrace) {
-      _logger.e('Sign-up error', error: error, stackTrace: stackTrace);
-      return false;
-    }
-  }
-
+  /// Sign out from Google
   Future<void> signOutGoogle() async {
     try {
       await _googleSignIn.signOut();
+      await SessionManager.clearSession(); // Clear session on sign-out
     } catch (error, stackTrace) {
       _logger.e('Google sign-out error', error: error, stackTrace: stackTrace);
     }

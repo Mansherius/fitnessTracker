@@ -1,4 +1,5 @@
 // lib/screens/auth/signup_screen.dart
+import 'package:fitt_tracker/api/api_client.dart';
 import 'package:flutter/material.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -25,32 +26,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     'Other',
   ];
 
-  // Async validation flag for email uniqueness
-  bool _isEmailAvailable = false;
-
   // Loading state
   bool _isLoading = false;
 
-  Future<void> _checkEmailAvailability(String email) async {
-    if (email.isEmpty) {
-      setState(() => _isEmailAvailable = false);
-      return;
-    }
-    bool available = await Future.delayed(
-      const Duration(milliseconds: 500),
-      () => email.toLowerCase() != 'taken@example.com',
-    );
-    setState(() => _isEmailAvailable = available);
-  }
-
   Future<void> _submitToBackend(Map<String, dynamic> payload) async {
-    debugPrint('Sign-up payload: $payload');
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await ApiClient.instance.signUp(payload);
+      debugPrint('Sign-up successful');
+    } catch (e) {
+      debugPrint('Sign-up failed: $e');
+      throw Exception('Failed to sign up');
+    }
   }
 
   Future<void> _handleSignUp() async {
-    await _checkEmailAvailability(_emailController.text.trim());
-
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -66,11 +55,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'updated_at': now,
     };
 
-    await _submitToBackend(payload);
-
-    setState(() => _isLoading = false);
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/main');
+    try {
+      await _submitToBackend(payload);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/main');
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign-up failed: $e')),
+      );
+    }
   }
 
   @override
@@ -106,25 +100,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Email
+              // Email (no availability check)
               TextFormField(
                 controller: _emailController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Email',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: Icon(
-                    _isEmailAvailable ? Icons.check : Icons.close,
-                    color: _isEmailAvailable ? Colors.green : Colors.red,
-                  ),
+                  border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                onChanged: _checkEmailAvailability,
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Please enter your email';
                   if (!RegExp(r'\S+@\S+\.\S+').hasMatch(v)) {
                     return 'Please enter a valid email';
                   }
-                  if (!_isEmailAvailable) return 'Email already in use';
                   return null;
                 },
               ),
