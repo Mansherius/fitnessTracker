@@ -1,0 +1,77 @@
+# User Management
+curl -X POST http://51.20.171.163:8000/users \
+-H "Content-Type: application/json" \
+-d '{"name": "John Doe", "email": "john@example.com", "password_hash": "hashed_password", "age": 30, "gender": "Male", "fitness_level": "Beginner", "profile_picture_url": null}'
+
+curl -X GET http://51.20.171.163:8000/users/<user_id>
+
+curl -X PUT http://51.20.171.163:8000/users/<user_id> \
+-H "Content-Type: application/json" \
+-d '{"name": "John Updated", "email": "john.updated@example.com", "fitness_level": "Intermediate"}'
+
+curl -X DELETE http://51.20.171.163:8000/users/<user_id>
+
+# Profile Picture Management
+curl -X POST http://51.20.171.163:8000/users/<user_id>/profile-picture \
+-F "file=@path/to/your/image.jpg"
+
+curl -X GET http://51.20.171.163:8000/users/<user_id>/profile-picture
+
+curl -X DELETE http://51.20.171.163:8000/users/<user_id>/profile-picture
+
+# Workouts
+curl -X POST http://51.20.171.163:8000/workouts \
+-H "Content-Type: application/json" \
+-d '{"user_id": "<user_id>", "date": "2025-04-29", "name": "Leg Day", "notes": "Squats and lunges"}'
+
+curl -X GET http://51.20.171.163:8000/workouts/<user_id>
+
+curl -X PUT http://51.20.171.163:8000/workouts/<workout_id> \
+-H "Content-Type: application/json" \
+-d '{"date": "2025-04-30", "name": "Updated Leg Day", "notes": "Added deadlifts"}'
+
+curl -X DELETE http://51.20.171.163:8000/workouts/<workout_id>
+
+# Measurements
+curl -X POST http://51.20.171.163:8000/measurements \
+-H "Content-Type: application/json" \
+-d '{"user_id": "<user_id>", "weight": 70, "bmi": 22.5, "body_fat_percentage": 15, "muscle_mass": 30, "date": "2025-04-29"}'
+
+curl -X GET http://51.20.171.163:8000/measurements/<user_id>
+
+curl -X PUT http://51.20.171.163:8000/measurements/<measurement_id> \
+-H "Content-Type: application/json" \
+-d '{"weight": 72, "bmi": 23, "body_fat_percentage": 14, "muscle_mass": 31}'
+
+curl -X DELETE http://51.20.171.163:8000/measurements/<measurement_id>
+
+# Social Features
+curl -X POST http://51.20.171.163:8000/follow \
+-H "Content-Type: application/json" \
+-d '{"follower_id": "<follower_id>", "followee_id": "<followee_id>"}'
+
+curl -X POST http://51.20.171.163:8000/unfollow \
+-H "Content-Type: application/json" \
+-d '{"follower_id": "<follower_id>", "followee_id": "<followee_id>"}'
+
+curl -X GET http://51.20.171.163:8000/users/<user_id>/followers
+
+curl -X GET http://51.20.171.163:8000/users/<user_id>/following
+
+curl -X POST http://51.20.171.163:8000/is-following \
+-H "Content-Type: application/json" \
+-d '{"follower_id": "<follower_id>", "followee_id": "<followee_id>"}'
+
+# Workout Feed
+curl -X GET http://51.20.171.163:8000/feed/<user_id>
+
+curl -X POST http://51.20.171.163:8000/feed/viewed \
+-H "Content-Type: application/json" \
+-d '{"viewer_id": "<viewer_id>", "workout_id": "<workout_id>"}'
+
+# Leaderboard
+curl -X GET "http://51.20.171.163:8000/leaderboard?limit=10&start_date=2025-04-01&end_date=2025-04-30"
+
+curl -X GET http://51.20.171.163:8000/leaderboard/<user_id>/rank
+
+curl -X POST http://51.20.171.163:8000/leaderboard/update
