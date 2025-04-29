@@ -223,12 +223,12 @@ workout_id = dbm.start_workout(
 # Output: Workout session started for user 4373271c-5141-433e-b868-5f1a2c9174f1.
 ```
 
-### log_exercise
+### add_exercise
 
 Logs an exercise in a workout session.
 
 ```python
-def log_exercise(self, workout_id, exercise, sets, reps, weight)
+def add_exercise(self, workout_id, exercise, sets, reps, weight)
 ```
 
 **Parameters:**
@@ -243,7 +243,7 @@ def log_exercise(self, workout_id, exercise, sets, reps, weight)
 
 **Example:**
 ```python
-exercise_id = dbm.log_exercise(
+exercise_id = dbm.add_exercise(
     workout_id='2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d',
     exercise="Leg Press",
     sets=3,
