@@ -1,8 +1,10 @@
+// lib/screens/home/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/services/feed_service.dart';
 import 'package:fitt_tracker/models/feed_item.dart';
-import 'package:fitt_tracker/widgets/workout_card.dart';
-import 'package:fitt_tracker/utils/session_manager.dart';
+import 'package:fitt_tracker/widgets/feed_workout_card.dart';
+import 'package:fitt_tracker/screens/workout/workout_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,18 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadFeed();
-  }
-
-  Future<void> _loadFeed() async {
-    final userId = await SessionManager.getUserId();
-    if (userId == null) {
-      throw Exception('User ID cannot be null');
-    }
-
-    setState(() {
-      _feedFuture = _feedService.fetchFeed(userId);
-    });
+    _feedFuture = _feedService.fetchFollowedAndOwnWorkouts();
   }
 
   @override
@@ -38,19 +29,21 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.black,
       body: FutureBuilder<List<FeedItem>>(
         future: _feedFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
+          if (snap.hasError) {
             return Center(
               child: Text(
-                'Error: ${snapshot.error}',
+                'Error: ${snap.error}',
                 style: const TextStyle(color: Colors.white),
               ),
             );
           }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          final feed = snap.data ?? [];
+
+          if (feed.isEmpty) {
             return const Center(
               child: Text(
                 'No workouts to display.',
@@ -59,22 +52,35 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          final feed = snapshot.data!..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          // Make sure they're newest→oldest
+          feed.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
           return ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
             itemCount: feed.length,
-            itemBuilder: (context, index) {
-              final item = feed[index];
-              return WorkoutCard(
-                item: item,
+            itemBuilder: (context, i) {
+              final item = feed[i];
+              return GestureDetector(
                 onTap: () {
-                  Navigator.pushNamed(
+                  Navigator.push(
                     context,
-                    '/workoutDetail',
-                    arguments: item.workoutId,
+                    MaterialPageRoute(
+                      builder: (_) => WorkoutDetailScreen(workout: item),
+                    ),
                   );
                 },
+                child: FeedWorkoutCard(
+                  item: item,
+                  // you can still forward the tap if you like:
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WorkoutDetailScreen(workout: item),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );

@@ -1,3 +1,4 @@
+import 'package:fitt_tracker/utils/session_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -64,9 +65,9 @@ class _EditPreferencesScreenState extends State<EditPreferencesScreen> {
         _bodyFatController.text.isNotEmpty ||
         _muscleMassController.text.isNotEmpty) {
       try {
-        final measurementId = await _getMeasurementId(); // Retrieve the measurement ID
+        final userId = await _getUserId(); // Retrieve the user ID
         final response = await _updateMeasurementsRequest(
-          measurementId: measurementId,
+          measurementId: userId, // Use userId as measurementId
           weight: _weightController.text,
           bmi: _bmiController.text,
           bodyFatPercentage: _bodyFatController.text,
@@ -94,15 +95,12 @@ class _EditPreferencesScreenState extends State<EditPreferencesScreen> {
   }
 
   Future<String> _getUserId() async {
-    // Simulate retrieving the user ID from session or storage
-    // Replace this with your actual implementation
-    return 'mock_user_id';
-  }
-
-  Future<String> _getMeasurementId() async {
-    // Simulate retrieving the measurement ID
-    // Replace this with your actual implementation
-    return 'mock_measurement_id';
+    // Retrieve the user ID using the session manager
+    final userId = await SessionManager.getUserId();
+    if (userId == null) {
+      throw Exception('User ID not found in session');
+    }
+    return userId;
   }
 
   Future<http.Response> _updateFitnessLevelRequest({

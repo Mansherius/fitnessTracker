@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/models/feed_item.dart';
+import 'package:intl/intl.dart'; // For formatting the date
 
 class WorkoutCard extends StatelessWidget {
   final FeedItem item;
@@ -67,7 +68,7 @@ class WorkoutCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildMetric('Duration', '${item.duration.inMinutes} min'),
+                _buildMetric('Duration', _formatDuration(item.duration)),
                 _buildMetric('Volume', '${item.volume.toStringAsFixed(1)} kg'),
                 _buildMetric('Sets', '${item.sets}'),
               ],
@@ -84,10 +85,39 @@ class WorkoutCard extends StatelessWidget {
                 color: Colors.grey,
               ),
             ),
+            const SizedBox(height: 12),
+
+            // Workout Date
+            Text(
+              'Date: ${DateFormat.yMMMd().format(item.timestamp)}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// Formats the duration into a human-readable format
+  String _formatDuration(int seconds) {
+    if (seconds < 60) {
+      return '$seconds sec';
+    } else if (seconds < 3600) {
+      final minutes = seconds ~/ 60;
+      final remainingSeconds = seconds % 60;
+      return remainingSeconds > 0
+          ? '$minutes min $remainingSeconds sec'
+          : '$minutes min';
+    } else {
+      final hours = seconds ~/ 3600;
+      final remainingMinutes = (seconds % 3600) ~/ 60;
+      return remainingMinutes > 0
+          ? '$hours hr $remainingMinutes min'
+          : '$hours hr';
+    }
   }
 
   Widget _buildMetric(String label, String value) {

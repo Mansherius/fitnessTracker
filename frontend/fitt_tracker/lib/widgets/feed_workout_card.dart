@@ -1,31 +1,38 @@
+// lib/widgets/feed_workout_card.dart
+
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/models/feed_item.dart';
+import 'package:intl/intl.dart';
 
-class WorkoutCardV2 extends StatelessWidget {
+class FeedWorkoutCard extends StatelessWidget {
   final FeedItem item;
   final VoidCallback onTap;
 
-  const WorkoutCardV2({super.key, required this.item, required this.onTap});
+  const FeedWorkoutCard({
+    super.key,
+    required this.item,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final exercisesPreview = item.exercises
         .take(3)
-        .map((exercise) => exercise.name)
+        .map((e) => e.name)
         .join(', ');
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey[900], // Slightly darker background
+          color: Colors.grey[900],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[700]!), // Light highlight
+          border: Border.all(color: Colors.grey[700]!),
           boxShadow: [
             BoxShadow(
-              color: Colors.black,
+              color: Colors.black.withOpacity(0.5),
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
@@ -34,30 +41,33 @@ class WorkoutCardV2 extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Info Row (New Section)
+            // —————— Header: Avatar + Username ——————
             Row(
               children: [
                 CircleAvatar(
-                  radius: 20,
+                  radius: 18,
                   backgroundImage: item.profilePicUrl.isNotEmpty
                       ? NetworkImage(item.profilePicUrl)
                       : const AssetImage('assets/images/default_profile.png')
                           as ImageProvider,
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  item.username,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Expanded(
+                  child: Text(
+                    item.username,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 12),
 
-            // Workout Title
+            // —————— Workout Title ——————
             Text(
               item.workoutTitle,
               style: const TextStyle(
@@ -68,7 +78,7 @@ class WorkoutCardV2 extends StatelessWidget {
             ),
             const SizedBox(height: 4),
 
-            // Optional Notes Section
+            // —————— Optional Notes ——————
             if (item.notes != null && item.notes!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -82,26 +92,32 @@ class WorkoutCardV2 extends StatelessWidget {
                 ),
               ),
 
-            // Duration, Volume, Sets
+            // —————— Metrics Row ——————
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildMetric('Duration', '${item.duration.inMinutes} min'),
+                _buildMetric('Duration', _formatDuration(item.duration)),
                 _buildMetric('Volume', '${item.volume.toStringAsFixed(1)} kg'),
                 _buildMetric('Sets', '${item.sets}'),
               ],
             ),
+
             const SizedBox(height: 12),
 
-            // Exercises Preview
+            // —————— Exercises Preview ——————
             Text(
               exercisesPreview.isNotEmpty
                   ? 'Exercises: $exercisesPreview'
                   : 'No exercises available',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+
+            const SizedBox(height: 12),
+
+            // —————— Date ——————
+            Text(
+              'Date: ${DateFormat.yMMMd().format(item.timestamp)}',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],
         ),
@@ -113,23 +129,24 @@ class WorkoutCardV2 extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        Text(value,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
       ],
     );
+  }
+
+  String _formatDuration(int seconds) {
+    if (seconds < 60) return '$seconds sec';
+    if (seconds < 3600) {
+      final m = seconds ~/ 60;
+      final s = seconds % 60;
+      return s > 0 ? '$m min $s sec' : '$m min';
+    }
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    return m > 0 ? '$h hr $m min' : '$h hr';
   }
 }
