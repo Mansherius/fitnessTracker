@@ -135,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 profilePicUrl: details['profile_picture_url'] ?? '',
                 workoutTitle: details['name'] ?? 'Workout #${i + 1}',
                 notes: details['notes'] ?? '',
-                duration: Duration(minutes: details['duration'] ?? 0),
+                duration: details['duration'] ?? 0,
                 volume: details['volume']?.toDouble() ?? 0.0,
                 sets: details['sets'] ?? 0,
                 timestamp: parsedDate,

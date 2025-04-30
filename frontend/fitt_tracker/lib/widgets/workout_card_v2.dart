@@ -86,7 +86,7 @@ class WorkoutCardV2 extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildMetric('Duration', '${item.duration.inMinutes} min'),
+                _buildMetric('Duration', '${Duration(seconds: item.duration).inMinutes} min'),
                 _buildMetric('Volume', '${item.volume.toStringAsFixed(1)} kg'),
                 _buildMetric('Sets', '${item.sets}'),
               ],

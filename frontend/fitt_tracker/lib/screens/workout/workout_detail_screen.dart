@@ -70,7 +70,7 @@ class WorkoutDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${workout.duration.inMinutes} mins',
+                      '${Duration(seconds: workout.duration).inMinutes} mins',
                       style: const TextStyle(
                         color: Colors.purpleAccent,
                         fontSize: 16,

@@ -5,7 +5,7 @@ class FeedItem {
   final String profilePicUrl; // URL of the user's profile picture
   final String workoutTitle; // Title of the workout
   final String? notes; // Optional notes for the workout
-  final Duration duration; // Duration of the workout
+  final int duration; // Duration of the workout in seconds
   final double volume; // Total volume lifted in the workout
   final int sets; // Total number of sets in the workout
   final DateTime timestamp; // Timestamp of when the workout was created
@@ -31,17 +31,22 @@ class FeedItem {
       userId: json['user_id'],
       username: json['username'],
       profilePicUrl: json['profile_pic_url'],
-      workoutTitle: json['workout_title'],
-      notes: json['notes'],
-      duration: Duration(seconds: json['duration']),
-      volume: json['volume'].toDouble(),
-      sets: json['sets'],
+      workoutTitle: json['workout_title'] ?? "Untitled Workout",
+      notes: json['notes'] ?? "",
+      duration: (json['duration'] is int) // Ensure duration is parsed as int
+          ? json['duration']
+          : int.tryParse(json['duration'].toString()) ?? 0,
+      volume: (json['volume'] as num?)?.toDouble() ?? 0.0,
+      sets: json['sets'] ?? 0,
       timestamp: DateTime.parse(json['timestamp']),
       exercises: (json['exercises'] as List<dynamic>)
           .map((e) => ExerciseSummary.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
+
+  /// Converts the duration from seconds to a `Duration` object
+  Duration get durationAsDuration => Duration(seconds: duration);
 }
 
 class ExerciseSummary {
@@ -62,7 +67,7 @@ class ExerciseSummary {
       name: json['name'],
       sets: json['sets'],
       reps: json['reps'],
-      weight: json['weight'].toDouble(),
+      weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
