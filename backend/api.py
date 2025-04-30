@@ -356,24 +356,6 @@ def is_following():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-# ------------------ Workout Feed ------------------
-
-@app.route('/feed/<user_id>', methods=['GET'])
-def get_workout_feed(user_id):
-    try:
-        return jsonify(db_manager.get_workout_feed(user_id)), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-@app.route('/feed/viewed', methods=['POST'])
-def mark_workout_viewed():
-    data = request.json
-    try:
-        db_manager.mark_workout_viewed(data['viewer_id'], data['workout_id'])
-        return jsonify({"message": "Marked as viewed"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
 
 # ------------------ Leaderboard ------------------
 
