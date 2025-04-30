@@ -1,110 +1,147 @@
-import 'package:fitt_tracker/models/feed_item.dart';
-import 'package:fitt_tracker/services/feed_service.dart';
 import 'package:flutter/material.dart';
+import 'package:fitt_tracker/models/feed_item.dart';
 
 class WorkoutDetailScreen extends StatelessWidget {
-  final String workoutId;
+  final FeedItem workout;
 
-  const WorkoutDetailScreen({super.key, required this.workoutId});
+  const WorkoutDetailScreen({super.key, required this.workout});
 
   @override
   Widget build(BuildContext context) {
-    final FeedService feedService = FeedService();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(workout.workoutTitle),
+        backgroundColor: Colors.black,
+      ),
+      backgroundColor: Colors.black,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Workout Name
+            Text(
+              workout.workoutTitle,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
 
-    return FutureBuilder<FeedItem>(
-      future: feedService.fetchWorkoutDetail(workoutId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        final workout = snapshot.data!;
+            // Notes
+            if (workout.notes != null && workout.notes!.isNotEmpty)
+              Text(
+                workout.notes!,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                ),
+              ),
+            const SizedBox(height: 16),
 
-        return Scaffold(
-          appBar: AppBar(title: Text(workout.workoutTitle)),
-          body: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Volume, Duration, Sets
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Notes
-                if (workout.notes != null && workout.notes!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      workout.notes!,
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  ),
-
-                // Stats
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Duration', style: TextStyle(color: Colors.grey)),
-                        Text(
-                          '${workout.duration.inMinutes}m',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ],
+                    const Text(
+                      'Volume',
+                      style: TextStyle(color: Colors.grey),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Volume', style: TextStyle(color: Colors.grey)),
-                        Text(
-                          '${workout.volume.toStringAsFixed(1)} kg',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Sets', style: TextStyle(color: Colors.grey)),
-                        Text(
-                          '${workout.sets}',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '${workout.volume.toStringAsFixed(1)} kg',
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 16),
-
-                // Exercises
-                ...workout.exercises.map((exercise) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exercise.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                Column(
+                  children: [
+                    const Text(
+                      'Duration',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${workout.duration.inMinutes} mins',
+                      style: const TextStyle(
+                        color: Colors.purpleAccent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      ...List.generate(exercise.sets, (index) {
-                        return Text(
-                          'Set ${index + 1}: ${exercise.reps} reps @ ${exercise.weight}kg',
-                          style: const TextStyle(color: Colors.white),
-                        );
-                      }),
-                      const SizedBox(height: 12),
-                    ],
-                  );
-                }),
+                    ),
+                  ],
+                ),
+                Column(
+                  children: [
+                    const Text(
+                      'Sets',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${workout.sets}',
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 16),
+
+            // Exercises List
+            const Text(
+              "Exercises:",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                itemCount: workout.exercises.fold(0, (count, exercise) => count! + (exercise.sets)),
+                itemBuilder: (context, index) {
+                  int currentIndex = 0;
+                  for (final exercise in workout.exercises) {
+                    if (index < currentIndex + exercise.sets) {
+                      final setIndex = index - currentIndex;
+                      return Card(
+                        color: Colors.grey[900],
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: ListTile(
+                          title: Text(
+                            '${exercise.name} - Set ${setIndex + 1}',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            '${exercise.reps} reps @ ${exercise.weight.toStringAsFixed(1)} kg',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      );
+                    }
+                    currentIndex += exercise.sets;
+                  }
+                  return const SizedBox.shrink(); // Fallback (shouldn't be reached)
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

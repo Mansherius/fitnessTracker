@@ -1,6 +1,8 @@
+import 'package:fitt_tracker/models/feed_item.dart';
 import 'package:fitt_tracker/screens/profile/edit_preferences_screen.dart';
 import 'package:fitt_tracker/screens/workout/activeWorkout.dart';
 import 'package:fitt_tracker/screens/workout/create_routine_screen.dart';
+import 'package:fitt_tracker/screens/workout/workout_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/screens/auth/login_screen.dart';
 import 'package:fitt_tracker/screens/auth/signup_screen.dart';
@@ -86,6 +88,9 @@ class _MyAppState extends State<MyApp> {
         '/emptyWorkout': (_) => const EmptyWorkoutScreen(),
         '/createRoutine': (context) => const CreateRoutineScreen(),
         '/edit-preferences': (context) => const EditPreferencesScreen(),
+        '/workoutDetail': (context) => WorkoutDetailScreen(
+          workout: ModalRoute.of(context)!.settings.arguments as FeedItem,
+        ),
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(
