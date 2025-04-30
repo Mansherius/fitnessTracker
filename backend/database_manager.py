@@ -298,7 +298,7 @@ class DatabaseManager:
             print(f"An error occurred while fetching routines for user {user_id}: {e}")
             return None
 
-    def update_workout(self, workout_id, date=None, name=None, notes=None):
+    def update_workout(self, workout_id, date=None, name=None, notes=None, volume=None, duration=None):
         try:
             columns_to_update = []
             params = []
@@ -314,6 +314,14 @@ class DatabaseManager:
             if notes is not None:
                 columns_to_update.append("notes = %s")
                 params.append(notes)
+            
+            if volume is not None:
+                columns_to_update.append("volume = %s")
+                params.append(volume)
+
+            if duration is not None:
+                columns_to_update.append("duration = %s")
+                params.append(duration)
 
             if not columns_to_update:
                 print("No updates provided.")
@@ -328,6 +336,7 @@ class DatabaseManager:
             self.connector.execute_query(query, tuple(params))
             print(f"Workout {workout_id} updated.")
             return True
+            
         except Exception as e:
             print(f"An error occurred while updating workout {workout_id}: {e}")
             return False
