@@ -1,13 +1,18 @@
 import 'package:fitt_tracker/screens/profile/edit_preferences_screen.dart';
 import 'package:fitt_tracker/screens/workout/workout_detail_screen.dart';
+import 'package:fitt_tracker/screens/profile/image_picker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/services/profile_service.dart';
+import 'package:fitt_tracker/services/image_picking_service.dart';
 import 'package:fitt_tracker/utils/session_manager.dart';
 import 'package:fitt_tracker/widgets/workout_card.dart';
 import 'package:fitt_tracker/models/feed_item.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+
+// Define the base URL for your API
+const String baseUrl = 'http://51.20.171.163:8000';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -24,9 +29,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _followersCount = 0;
   int _followingCount = 0;
   int _workoutsCount = 0;
-  String? _fitnessLevel; // Nullable fitness level
+  String? _fitnessLevel;
 
-  List<FeedItem> _workouts = []; // List to store workout details
+  List<FeedItem> _workouts = [];
 
   @override
   void initState() {
@@ -37,27 +42,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfileData() async {
     try {
-      final userId =
-          await SessionManager.getUserId(); // Retrieve the user ID from session
-      if (userId == null) {
-        throw Exception('User ID cannot be null');
+      final userId = await SessionManager.getUserId();
+      if (userId == null) throw Exception('User ID cannot be null');
+
+      final profile = await _profileService.fetchUserProfile(userId);
+      print('Profile Data from Backend: $profile');
+
+      // instead of constructing the image URL yourself...
+      String picUrl = '';
+      if (profile['profilePicUrl'] != null) {
+        // call the Flask endpoint that returns {"url": "..."}
+        final picResp = await http.get(
+          Uri.parse('$baseUrl/users/$userId/profile-picture'),
+        );
+        if (picResp.statusCode == 200) {
+          final body = json.decode(picResp.body) as Map<String, dynamic>;
+          picUrl = body['url'] as String;
+        } else {
+          print('No profile picture found: ${picResp.statusCode}');
+        }
       }
 
-      // Fetch profile data
-      final profile = await _profileService.fetchUserProfile(userId);
-
-      // Update state with profile data
       setState(() {
         _username = profile['username'] as String;
-        _profilePicUrl = profile['profilePicUrl'] as String;
+        _profilePicUrl = picUrl;
         _followersCount = profile['followersCount'] as int;
         _followingCount = profile['followingCount'] as int;
         _workoutsCount = profile['workoutsCount'] as int;
         _fitnessLevel = profile['fitnessLevel'] as String?;
       });
+
+      print('Final Profile Picture URL: $_profilePicUrl');
     } catch (e) {
-      // Handle errors
-      print('Error loading profile data: $e');
+      debugPrint('Error loading profile data: $e');
     }
   }
 
@@ -157,6 +174,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showEditPictureOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Change Picture'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ImagePickerScreen(),
+                    ),
+                  );
+
+                  // Reload profile picture if updated
+                  if (result == true) {
+                    _loadProfileData();
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text('Delete Picture'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final imagePickingService = ImagePickingService();
+                  final userId = await SessionManager.getUserId();
+                  if (userId == null) throw Exception('User ID cannot be null');
+                  final success = await imagePickingService
+                      .deleteProfilePicture(userId);
+                  if (success) {
+                    _loadProfileData();
+                  } else {
+                    debugPrint('Failed to delete profile picture');
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_username.isEmpty) {
@@ -177,15 +243,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Profile Header
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundImage:
-                        _profilePicUrl.isNotEmpty
-                            ? NetworkImage(_profilePicUrl)
-                            : const AssetImage(
-                                  'assets/images/default_profile.png',
-                                )
-                                as ImageProvider,
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundImage:
+                            (_profilePicUrl.isNotEmpty)
+                                ? NetworkImage(_profilePicUrl)
+                                : const AssetImage(
+                                      'assets/images/default_profile.png',
+                                    )
+                                    as ImageProvider,
+                      ),
+                      Positioned(
+                        top: 0, // Move to the top
+                        right: 0, // Align to the right
+                        child: GestureDetector(
+                          onTap: _showEditPictureOptions,
+                          child: Container(
+                            padding: const EdgeInsets.all(
+                              4,
+                            ), // Add padding for better touch area
+                            decoration: BoxDecoration(
+                              color:
+                                  Colors
+                                      .lightBlue, // Background color for the button
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.edit,
+                              size: 16, // Smaller icon size
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 16),
                   Column(

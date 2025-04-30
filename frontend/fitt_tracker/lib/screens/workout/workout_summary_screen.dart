@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:fitt_tracker/utils/durationTime.dart';
+import 'package:fitt_tracker/utils/duration_time.dart';
 class WorkoutSummaryScreen extends StatefulWidget {
   final String workoutId;
   final Duration duration;
