@@ -123,7 +123,8 @@ def start_workout():
             user_id=data['user_id'],
             date=data['date'],
             name=data.get('name'),
-            notes=data.get('notes')
+            notes=data.get('notes'),
+            routine=data.get('routine',"0")
         )
         return jsonify({"message": "Workout added successfully", "workout_id": workout_id}), 201
     except Exception as e:
@@ -137,7 +138,7 @@ def get_user_workouts(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-@app.route('/workouts/<workout_id>', methods=['PUT'])
+@app.route('/workouts/<workout_id>', methods=['PATCH'])
 def update_workout(workout_id):
     data = request.json
     try:
@@ -145,7 +146,9 @@ def update_workout(workout_id):
             workout_id=workout_id,
             date=data.get('date'),
             name=data.get('name'),
-            notes=data.get('notes')
+            notes=data.get('notes'),
+            volume=data.get('volume'),
+            duration=data.get('duration')
         )
         if success:
             return jsonify({"message": "Workout updated successfully"}), 200
@@ -185,6 +188,15 @@ def get_workout_details(workout_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+@app.route('/users/<user_id>/routines', methods=['GET'])
+def get_user_routines(user_id):
+    try:
+        routines = db_manager.get_user_routines(user_id)
+        if routines is not None:
+            return jsonify(routines), 200
+        return jsonify({"error": "Failed to fetch routines"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 # ------------------ Exercises ------------------
 
