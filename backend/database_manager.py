@@ -48,9 +48,11 @@ class DatabaseManager:
 
     def get_user_profile(self, user_id):
         try:
-            query = "SELECT * FROM users WHERE id = %s"
+            query = "SELECT name, fitness_level, profile_picture_url FROM users WHERE id = %s"
             params = (user_id,)
             result = self.connector.execute_query(query, params, commit=False, fetch=True)
+            social_info = (len(self.get_following(user_id)), len(self.get_followers(user_id)), len(self.get_user_workouts(user_id)))
+            result[0] = result[0] + social_info
             return result
         except Exception as e:
             print(f"An error occurred while fetching user profile for {user_id}: {e}")
@@ -251,18 +253,17 @@ class DatabaseManager:
     def get_user_workouts(self, user_id):
         try:
             query = """
-                SELECT w.id, w.date, w.name, w.notes, w.created_at,
-                    COUNT(e.id) AS exercise_count,
-                    SUM(e.sets * e.reps * e.weight) AS total_weight_lifted
+                SELECT w.id
                 FROM workouts w
-                LEFT JOIN exercises e ON w.id = e.workout_id
                 WHERE w.user_id = %s
                 GROUP BY w.id
                 ORDER BY w.date DESC
             """
             params = (user_id,)
             workouts = self.connector.execute_query(query, params, commit=False, fetch=True)
-            return workouts
+            workout_details = [self.get_workout_details(workout_ids[0]) for workout_ids in workouts]
+
+            return workout_details
         except Exception as e:
             print(f"An error occurred while fetching workouts for user {user_id}: {e}")
             return None
@@ -619,53 +620,11 @@ class DatabaseManager:
 
     # Feed Management
 
-    def get_workout_feed(self, user_id, limit=20, offset=0, include_viewed=False):
-        try:
-            viewed_clause = "" if include_viewed else f"""
-                AND NOT EXISTS (
-                    SELECT 1 FROM workout_views
-                    WHERE workout_id = w.id AND viewer_id = %s
-                )
-            """
-            
-            query = f"""
-                SELECT 
-                    w.id,
-                    w.date,
-                    w.name,
-                    u.id AS user_id,
-                    u.name AS user_name,
-                    u.profile_picture_url,
-                    COUNT(e.id) AS exercise_count,
-                    SUM(e.sets * e.reps * e.weight) AS total_weight_lifted
-                FROM workouts w
-                JOIN users u ON w.user_id = u.id
-                LEFT JOIN exercises e ON w.id = e.workout_id
-                WHERE w.user_id IN (
-                    SELECT following_id
-                    FROM user_follows
-                    WHERE follower_id = %s
-                )
-                {viewed_clause}
-                GROUP BY w.id, u.id
-                ORDER BY w.date DESC
-                LIMIT %s OFFSET %s
-            """
-            
-            params = [user_id, user_id] if not include_viewed else [user_id]
-            params.extend([limit, offset])
-            
-            feed_items = self.connector.execute_query(query, tuple(params), commit=False, fetch=True)
-            return feed_items
-        except Exception as e:
-            print(f"An error occurred while fetching workout feed: {e}")
-            return None
-
     def get_workout_details(self, workout_id):
         try:
             # Get workout information
             workout_query = """
-                SELECT w.id, w.date, w.name, w.notes, u.id AS user_id, u.name AS user_name, u.profile_picture_url
+                SELECT w.id, w.date, w.name, w.notes, u.id AS user_id, u.name AS user_name, u.profile_picture_url, w.duration, w.volume
                 FROM workouts w
                 JOIN users u ON w.user_id = u.id
                 WHERE w.id = %s
@@ -695,6 +654,8 @@ class DatabaseManager:
                 'user_id': workout_result[0][4],
                 'user_name': workout_result[0][5],
                 'profile_picture_url': workout_result[0][6],
+                'duration' : workout_result[0][7],
+                'volume' : workout_result[0][8],
                 'exercises': []
             }
             

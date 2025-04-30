@@ -80,7 +80,7 @@ def get_user_profile(self, user_id)
 **Example:**
 ```python
 results = dbm.get_user_profile(user_id='4373271c-5141-433e-b868-5f1a2c9174f1')
-# Results contain: id, name, email, password_hash, age, gender, fitness_level, profile_picture_url, created_at, updated_at
+# Results contain: name, fitness_level, profile_picture_url, no. of following, no. of followers, and no. of workouts
 ```
 
 ### update_user_profile
@@ -337,7 +337,7 @@ def get_user_workouts(self, user_id)
 **Example:**
 ```python
 workouts = dbm.get_user_workouts(user_id='4373271c-5141-433e-b868-5f1a2c9174f1')
-# Results contain: id, date, name, notes, created_at, exercise_count, total_weight_lifted
+# Results contain: list of workout details, with each item having id, date, name, notes, user_id, user_name, profile_picture_url, duration, volume, and list of exercises
 ```
 
 ### update_workout
@@ -403,7 +403,7 @@ def get_workout_details(self, workout_id)
 **Example:**
 ```python
 details = dbm.get_workout_details(workout_id='2a8b9c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d')
-# Returns a dictionary with workout details and a list of exercises
+# Returns a dictionary with id, date, name, notes, user_id, user_name, profile_picture_url, duration, volume, and list of exercises
 ```
 
 ### get_total_weight_lifted
@@ -710,29 +710,6 @@ def is_following(self, follower_id, following_id)
 - `bool`: True if following, False otherwise
 
 ## Feed Management
-
-### get_workout_feed
-
-Retrieves workout feed items from users that the specified user follows.
-
-```python
-def get_workout_feed(self, user_id, limit=20, offset=0, include_viewed=False)
-```
-
-**Parameters:**
-- `user_id` (str): UUID of the user viewing the feed
-- `limit` (int, optional): Maximum number of items to return (default: 20)
-- `offset` (int, optional): Number of items to skip (for pagination)
-- `include_viewed` (bool, optional): Whether to include already viewed workouts
-
-**Returns:**
-- List of tuples containing feed information, or None if an error occurs
-
-**Example:**
-```python
-results = dbm.get_workout_feed(user_id='1ef19920-4247-46aa-95ca-85abda317c7d')
-# Returns: List of workout feed items from followed users, sorted by date
-```
 
 ### mark_workout_viewed
 
