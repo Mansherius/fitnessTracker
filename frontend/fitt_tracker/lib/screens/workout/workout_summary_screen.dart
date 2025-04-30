@@ -1,17 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
-// Converts a Duration object into an integer (total seconds)
-int durationToSeconds(Duration duration) {
-  return duration.inSeconds;
-}
-
-// Converts an integer (total seconds) back into a Duration object
-Duration secondsToDuration(int seconds) {
-  return Duration(seconds: seconds);
-}
-
+import 'package:fitt_tracker/utils/durationTime.dart';
 class WorkoutSummaryScreen extends StatefulWidget {
   final String workoutId;
   final Duration duration;
@@ -38,56 +28,58 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
   bool _isSaving = false;
 
   Future<void> _saveWorkout() async {
-    if (nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide a workout name')),
-      );
-      return;
-    }
+  if (nameController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please provide a workout name')),
+    );
+    return;
+  }
 
-    setState(() {
-      _isSaving = true;
+  setState(() {
+    _isSaving = true;
+  });
+
+  try {
+    final requestBody = jsonEncode({
+      'name': nameController.text,
+      'notes': notesController.text,
+      'volume': widget.totalVolume,
+      'duration': durationToSeconds(widget.duration), // Use helper function here
     });
 
-    try {
-      final response = await http.put(
-        Uri.parse('$_baseUrl/workouts/${widget.workoutId}'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': nameController.text,
-          'notes': notesController.text,
-          'total_volume': widget.totalVolume,
-          'total_duration': durationToSeconds(
-            widget.duration,
-          ), // Use helper function here
-        }),
-      );
+    print(requestBody);
 
-      if (response.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Workout saved successfully!')),
-          );
-          Navigator.pop(context); // Close the summary screen
-          Navigator.pop(context); // Close the workout screen
-        }
-      } else {
-        throw Exception('Failed to save workout: ${response.body}');
-      }
-    } catch (e) {
+    final response = await http.patch( // Changed from PUT to PATCH
+      Uri.parse('$_baseUrl/workouts/${widget.workoutId}'),
+      headers: {'Content-Type': 'application/json'},
+      body: requestBody,
+    );
+
+    if (response.statusCode == 200) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving workout: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Workout saved successfully!')),
+        );
+        Navigator.pop(context); // Close the summary screen
+        Navigator.pop(context); // Close the workout screen
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+    } else {
+      throw Exception('Failed to save workout: ${response.body}');
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving workout: $e')),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isSaving = false;
+      });
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
