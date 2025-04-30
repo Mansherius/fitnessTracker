@@ -95,7 +95,7 @@ def upload_profile_picture(user_id):
 @app.route('/users/<user_id>/profile-picture', methods=['GET'])
 def get_profile_picture_url(user_id):
     try:
-        url = picture_handler.get_profile_picture_key(user_id)
+        url = picture_handler.get_profile_picture_url(user_id)
         if url:
             return jsonify({"url": url}), 200
         return jsonify({"error": "Profile picture not found"}), 404
