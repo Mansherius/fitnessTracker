@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/models/feed_item.dart';
 
-class WorkoutCard extends StatelessWidget {
+class WorkoutCardV2 extends StatelessWidget {
   final FeedItem item;
   final VoidCallback onTap;
 
-  const WorkoutCard({
-    super.key,
-    required this.item,
-    required this.onTap,
-  });
+  const WorkoutCardV2({super.key, required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +34,29 @@ class WorkoutCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // User Info Row (New Section)
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage: item.profilePicUrl.isNotEmpty
+                      ? NetworkImage(item.profilePicUrl)
+                      : const AssetImage('assets/images/default_profile.png')
+                          as ImageProvider,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  item.username,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
             // Workout Title
             Text(
               item.workoutTitle,
