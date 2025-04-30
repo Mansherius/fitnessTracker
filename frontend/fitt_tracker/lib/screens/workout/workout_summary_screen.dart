@@ -47,8 +47,6 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       'duration': durationToSeconds(widget.duration), // Use helper function here
     });
 
-    print(requestBody);
-
     final response = await http.patch( // Changed from PUT to PATCH
       Uri.parse('$_baseUrl/workouts/${widget.workoutId}'),
       headers: {'Content-Type': 'application/json'},

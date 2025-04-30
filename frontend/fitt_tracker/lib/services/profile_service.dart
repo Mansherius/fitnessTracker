@@ -1,83 +1,37 @@
-// lib/services/profile_service.dart
-
-import 'dart:async';
-import 'package:fitt_tracker/services/feed_service.dart'; // for ExerciseSummary
-
-/// Represents one completed workout from *this* user.
-class WorkoutItem {
-  final String workoutId;
-  final String workoutTitle;
-  final DateTime timestamp;
-  final Duration duration;
-  final double volumeKg;
-  final int records;
-  final List<ExerciseSummary> exercises;
-
-  WorkoutItem({
-    required this.workoutId,
-    required this.workoutTitle,
-    required this.timestamp,
-    required this.duration,
-    required this.volumeKg,
-    required this.records,
-    required this.exercises,
-  });
-}
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:fitt_tracker/models/feed_item.dart';
 
 class ProfileService {
+  final String _baseUrl = 'http://51.20.171.163:8000';
+
   /// Fetches basic profile info.
-  Future<Map<String, Object>> fetchUserProfile() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return {
-      'username': 'JohnDoe',
-      'profilePicUrl': '',
-      'followersCount': 120,
-      'followingCount': 80,
-    };
+  Future<Map<String, dynamic>> fetchUserProfile(String userId) async {
+  final uri = Uri.parse('$_baseUrl/users/$userId'); // Updated endpoint
+  final response = await http.get(uri);
+
+  if (response.statusCode == 404) {
+    throw Exception('User profile not found (status 404)');
+  }
+  if (response.statusCode != 200) {
+    throw Exception('Failed to load user profile (status ${response.statusCode})');
   }
 
-  /// Fetches this user’s past workouts.
-  Future<List<WorkoutItem>> fetchWorkoutHistory() async {
-    await Future.delayed(const Duration(seconds: 1));
-    // Dummy data reusing ExerciseSummary from feed_service
-    return [
-      WorkoutItem(
-        workoutId: 'w1',
-        workoutTitle: 'Leg Day',
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
-        duration: const Duration(hours: 1),
-        volumeKg: 5000,
-        records: 2,
-        exercises: [
-          ExerciseSummary(
-            name: 'Squat',
-            iconUrl: 'assets/images/squat.png',
-            setsDescription: '4×5 Squat @ 100kg',
-          ),
-          ExerciseSummary(
-            name: 'Leg Press',
-            iconUrl: 'assets/images/leg_press.png',
-            setsDescription: '3×10 Leg Press @ 200kg',
-          ),
-          ExerciseSummary(
-            name: 'Lunge',
-            iconUrl: 'assets/images/lunge.png',
-            setsDescription: '3×12 Lunge @ bodyweight',
-          ),
-          // …etc.
-        ],
-      ),
-      // …more WorkoutItem…
-    ];
-  }
+  return jsonDecode(response.body) as Map<String, dynamic>;
+}
 
-  /// Fetches leaderboard entries relative to this user.
-  Future<List<Map<String, Object>>> fetchLeaderboard(String username) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      {'username': 'Alice', 'score': 150},
-      {'username': 'Bob', 'score': 140},
-      {'username': username, 'score': 120},
-    ];
+  /// Fetches this user’s past workouts as FeedItems.
+  Future<List<FeedItem>> fetchWorkoutHistory(String userId) async {
+    final uri = Uri.parse('$_baseUrl/workouts/$userId');
+    final response = await http.get(uri);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load workout history (status ${response.statusCode})');
+    }
+
+    final List<dynamic> jsonList = jsonDecode(response.body) as List<dynamic>;
+    return jsonList
+        .map((e) => FeedItem.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
