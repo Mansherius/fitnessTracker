@@ -1,3 +1,5 @@
+// lib/screens/workout/workout_detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fitt_tracker/models/feed_item.dart';
 
@@ -5,6 +7,18 @@ class WorkoutDetailScreen extends StatelessWidget {
   final FeedItem workout;
 
   const WorkoutDetailScreen({super.key, required this.workout});
+
+  String _formatDuration(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    final twoDigits = (int n) => n.toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
+    } else {
+      return '${twoDigits(minutes)}:${twoDigits(seconds)}';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +59,7 @@ class WorkoutDetailScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Volume
                 Column(
                   children: [
                     const Text(
@@ -62,6 +77,8 @@ class WorkoutDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                // Duration with HH:MM:SS
                 Column(
                   children: [
                     const Text(
@@ -70,7 +87,7 @@ class WorkoutDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${Duration(seconds: workout.duration).inMinutes} mins',
+                      _formatDuration(workout.duration),
                       style: const TextStyle(
                         color: Colors.purpleAccent,
                         fontSize: 16,
@@ -79,6 +96,8 @@ class WorkoutDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                // Sets
                 Column(
                   children: [
                     const Text(
@@ -98,6 +117,7 @@ class WorkoutDetailScreen extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 16),
 
             // Exercises List
@@ -112,30 +132,30 @@ class WorkoutDetailScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Expanded(
               child: ListView.builder(
-                itemCount: workout.exercises.fold(0, (count, exercise) => count! + (exercise.sets)),
+                itemCount: workout.exercises.fold<int>(0, (sum, ex) => sum + ex.sets),
                 itemBuilder: (context, index) {
-                  int currentIndex = 0;
-                  for (final exercise in workout.exercises) {
-                    if (index < currentIndex + exercise.sets) {
-                      final setIndex = index - currentIndex;
+                  int cursor = 0;
+                  for (final ex in workout.exercises) {
+                    if (index < cursor + ex.sets) {
+                      final setNumber = index - cursor + 1;
                       return Card(
                         color: Colors.grey[900],
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
                           title: Text(
-                            '${exercise.name} - Set ${setIndex + 1}',
+                            '${ex.name} – Set $setNumber',
                             style: const TextStyle(color: Colors.white),
                           ),
                           subtitle: Text(
-                            '${exercise.reps} reps @ ${exercise.weight.toStringAsFixed(1)} kg',
+                            '${ex.reps} reps @ ${ex.weight.toStringAsFixed(1)} kg',
                             style: const TextStyle(color: Colors.white70),
                           ),
                         ),
                       );
                     }
-                    currentIndex += exercise.sets;
+                    cursor += ex.sets;
                   }
-                  return const SizedBox.shrink(); // Fallback (shouldn't be reached)
+                  return const SizedBox.shrink();
                 },
               ),
             ),

@@ -1,17 +1,20 @@
-import 'package:fitt_tracker/screens/profile/edit_preferences_screen.dart';
-import 'package:fitt_tracker/screens/workout/workout_detail_screen.dart';
-import 'package:fitt_tracker/screens/profile/image_picker_screen.dart';
+// lib/screens/profile/profile_screen.dart
+
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:fitt_tracker/services/profile_service.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:fitt_tracker/models/feed_item.dart';
+import 'package:fitt_tracker/screens/profile/edit_preferences_screen.dart';
+import 'package:fitt_tracker/screens/profile/image_picker_screen.dart';
+import 'package:fitt_tracker/screens/workout/workout_detail_screen.dart';
 import 'package:fitt_tracker/services/image_picking_service.dart';
+import 'package:fitt_tracker/services/profile_service.dart';
 import 'package:fitt_tracker/utils/session_manager.dart';
 import 'package:fitt_tracker/widgets/workout_card.dart';
-import 'package:fitt_tracker/models/feed_item.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:intl/intl.dart';
 
-// Define the base URL for your API
 const String baseUrl = 'http://51.20.171.163:8000';
 
 class ProfileScreen extends StatefulWidget {
@@ -48,10 +51,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final profile = await _profileService.fetchUserProfile(userId);
       print('Profile Data from Backend: $profile');
 
-      // instead of constructing the image URL yourself...
       String picUrl = '';
       if (profile['profilePicUrl'] != null) {
-        // call the Flask endpoint that returns {"url": "..."}
         final picResp = await http.get(
           Uri.parse('$baseUrl/users/$userId/profile-picture'),
         );
@@ -59,7 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final body = json.decode(picResp.body) as Map<String, dynamic>;
           picUrl = body['url'] as String;
         } else {
-          print('No profile picture found: ${picResp.statusCode}');
+          debugPrint('No profile picture found: ${picResp.statusCode}');
         }
       }
 
@@ -72,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _fitnessLevel = profile['fitnessLevel'] as String?;
       });
 
-      print('Final Profile Picture URL: $_profilePicUrl');
+      debugPrint('Final Profile Picture URL: $_profilePicUrl');
     } catch (e) {
       debugPrint('Error loading profile data: $e');
     }
@@ -80,146 +81,111 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadWorkoutFeed() async {
     try {
-      final userId =
-          await SessionManager.getUserId(); // Retrieve the user ID from session
-      if (userId == null) {
-        throw Exception('User ID cannot be null');
-      }
+      final userId = await SessionManager.getUserId();
+      if (userId == null) throw Exception('User ID cannot be null');
 
-      // Fetch user workouts
       final workoutsResponse = await http.get(
-        Uri.parse('http://51.20.171.163:8000/workouts/$userId'),
+        Uri.parse('$baseUrl/workouts/$userId'),
       );
 
       if (workoutsResponse.statusCode == 200) {
         final List<dynamic> workouts = jsonDecode(workoutsResponse.body);
+        final filtered = workouts.where((w) => w != null).toList();
 
-        // Debug log to inspect the response
-        print('Workouts Response: $workouts');
-
-        // Filter out null values from the workouts list
-        final filteredWorkouts =
-            workouts.where((workout) => workout != null).toList();
-
-        // Fetch details for each workout
-        final List<FeedItem> workoutDetails = [];
-        for (int i = 0; i < filteredWorkouts.length; i++) {
-          final workout = filteredWorkouts[i];
-          final workoutId = workout['id'];
-
-          // Fetch workout details
-          final detailsResponse = await http.get(
-            Uri.parse('http://51.20.171.163:8000/workouts/details/$workoutId'),
+        final List<FeedItem> detailsList = [];
+        for (var w in filtered) {
+          final workoutId = w['id'] as String;
+          final det = await http.get(
+            Uri.parse('$baseUrl/workouts/details/$workoutId'),
           );
+          if (det.statusCode != 200) continue;
 
-          if (detailsResponse.statusCode == 200) {
-            final details = jsonDecode(detailsResponse.body);
+          final data = jsonDecode(det.body) as Map<String, dynamic>;
 
-            // Debug log to inspect the details
-            print('Workout Details: $details');
-
-            // Parse the date using intl
-            DateTime parsedDate;
-            try {
-              parsedDate = DateFormat(
-                "EEE, dd MMM yyyy HH:mm:ss 'GMT'",
-              ).parse(details['date']);
-            } catch (e) {
-              parsedDate =
-                  DateTime.now(); // Fallback to current date if parsing fails
-              print('Error parsing date: $e');
-            }
-
-            // Handle null exercises field
-            final exercises =
-                (details['exercises'] as List<dynamic>? ?? [])
-                    .map<ExerciseSummary>(
-                      (exercise) => ExerciseSummary(
-                        name: exercise['exercise'],
-                        sets: exercise['sets'],
-                        reps: exercise['reps'],
-                        weight: exercise['weight']?.toDouble() ?? 0.0,
-                      ),
-                    )
-                    .toList();
-
-            // Create FeedItem object
-            workoutDetails.add(
-              FeedItem(
-                workoutId: workoutId,
-                userId: userId,
-                username: details['user_name'] ?? 'Unknown',
-                profilePicUrl: details['profile_picture_url'] ?? '',
-                workoutTitle: details['name'] ?? 'Workout #${i + 1}',
-                notes: details['notes'] ?? '',
-                duration: details['duration'] ?? 0,
-                volume: details['volume']?.toDouble() ?? 0.0,
-                sets: details['sets'] ?? 0,
-                timestamp: parsedDate,
-                exercises: exercises,
-              ),
-            );
+          // parse date
+          DateTime ts;
+          try {
+            ts = DateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'")
+                .parse(data['date'] as String);
+          } catch (_) {
+            ts = DateTime.now();
           }
+
+          // build exercises
+          final exRaw = data['exercises'] as List<dynamic>? ?? [];
+          final exercises = exRaw
+              .map((ex) => ExerciseSummary(
+                    name: ex['exercise'],
+                    sets: ex['sets'],
+                    reps: ex['reps'],
+                    weight: (ex['weight'] as num).toDouble(),
+                  ))
+              .toList();
+
+          // total sets
+          final totalSets =
+              exercises.fold<int>(0, (sum, ex) => sum + ex.sets);
+
+          detailsList.add(FeedItem(
+            workoutId: workoutId,
+            userId: userId,
+            username: data['user_name'] as String? ?? 'Unknown',
+            profilePicUrl:
+                data['profile_picture_url'] as String? ?? '',
+            workoutTitle: data['name'] as String? ?? 'Untitled',
+            notes: data['notes'] as String? ?? '',
+            duration: (data['duration'] as int?) ?? 0,
+            volume: (data['volume'] as num?)?.toDouble() ?? 0.0,
+            sets: totalSets,
+            timestamp: ts,
+            exercises: exercises,
+          ));
         }
 
-        // Update state with workout details
-        setState(() {
-          _workouts = workoutDetails;
-        });
+        setState(() => _workouts = detailsList);
       } else {
-        print('Failed to load workouts: ${workoutsResponse.body}');
+        debugPrint('Failed to load workouts: ${workoutsResponse.body}');
       }
     } catch (e) {
-      print('Error loading workout feed: $e');
+      debugPrint('Error loading workout feed: $e');
     }
   }
 
   void _showEditPictureOptions() {
     showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Change Picture'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ImagePickerScreen(),
-                    ),
-                  );
-
-                  // Reload profile picture if updated
-                  if (result == true) {
-                    _loadProfileData();
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete),
-                title: const Text('Delete Picture'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final imagePickingService = ImagePickingService();
-                  final userId = await SessionManager.getUserId();
-                  if (userId == null) throw Exception('User ID cannot be null');
-                  final success = await imagePickingService
-                      .deleteProfilePicture(userId);
-                  if (success) {
-                    _loadProfileData();
-                  } else {
-                    debugPrint('Failed to delete profile picture');
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Change Picture'),
+              onTap: () async {
+                Navigator.pop(context);
+                final ok = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ImagePickerScreen(),
+                  ),
+                );
+                if (ok == true) _loadProfileData();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('Delete Picture'),
+              onTap: () async {
+                Navigator.pop(context);
+                final serv = ImagePickingService();
+                final userId = await SessionManager.getUserId();
+                if (userId == null) throw Exception();
+                final ok = await serv.deleteProfilePicture(userId);
+                if (ok) _loadProfileData();
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -240,39 +206,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Header
+              // — Profile Header
               Row(
                 children: [
                   Stack(
                     children: [
                       CircleAvatar(
                         radius: 40,
-                        backgroundImage:
-                            (_profilePicUrl.isNotEmpty)
-                                ? NetworkImage(_profilePicUrl)
-                                : const AssetImage(
-                                      'assets/images/default_profile.png',
-                                    )
-                                    as ImageProvider,
+                        backgroundImage: _profilePicUrl.isNotEmpty
+                            ? NetworkImage(_profilePicUrl)
+                            : const AssetImage(
+                                    'assets/images/default_profile.png')
+                                as ImageProvider,
                       ),
                       Positioned(
-                        top: 0, // Move to the top
-                        right: 0, // Align to the right
-                        child: GestureDetector(
+                        top: 0,
+                        right: 0,
+                        child: InkWell(
                           onTap: _showEditPictureOptions,
                           child: Container(
-                            padding: const EdgeInsets.all(
-                              4,
-                            ), // Add padding for better touch area
-                            decoration: BoxDecoration(
-                              color:
-                                  Colors
-                                      .lightBlue, // Background color for the button
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.lightBlue,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.edit,
-                              size: 16, // Smaller icon size
+                              size: 16,
                               color: Colors.white,
                             ),
                           ),
@@ -295,24 +255,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text(
-                            "Followers: $_followersCount",
-                            style: const TextStyle(color: Colors.white),
-                          ),
+                          Text("Followers: $_followersCount",
+                              style: const TextStyle(color: Colors.white)),
                           const SizedBox(width: 16),
-                          Text(
-                            "Following: $_followingCount",
-                            style: const TextStyle(color: Colors.white),
-                          ),
+                          Text("Following: $_followingCount",
+                              style: const TextStyle(color: Colors.white)),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text(
-                            "Workouts: $_workoutsCount",
-                            style: const TextStyle(color: Colors.white),
-                          ),
+                          Text("Workouts: $_workoutsCount",
+                              style: const TextStyle(color: Colors.white)),
                           if (_fitnessLevel != null &&
                               _fitnessLevel!.isNotEmpty)
                             Padding(
@@ -334,17 +288,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   IconButton(
                     icon: const Icon(Icons.settings, color: Colors.white),
                     onPressed: () async {
-                      final result = await Navigator.push(
+                      final ok = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const EditPreferencesScreen(),
+                          builder: (_) => const EditPreferencesScreen(),
                         ),
                       );
-
-                      // Reload profile data if preferences were updated
-                      if (result == true) {
-                        _loadProfileData();
-                      }
+                      if (ok == true) _loadProfileData();
                     },
                   ),
                 ],
@@ -352,7 +302,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 24),
 
-              // Workout Feed
+              // — Workout Feed
               const Text(
                 "Workout Feed",
                 style: TextStyle(
@@ -367,18 +317,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _workouts.length,
-                itemBuilder: (context, index) {
-                  final workout = _workouts[index];
-
+                itemBuilder: (_, i) {
+                  final w = _workouts[i];
                   return WorkoutCard(
-                    item: workout,
+                    item: w,
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  WorkoutDetailScreen(workout: workout),
+                          builder: (_) =>
+                              WorkoutDetailScreen(workout: w),
                         ),
                       );
                     },
