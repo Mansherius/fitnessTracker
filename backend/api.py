@@ -30,7 +30,7 @@ def add_user():
             fitness_level=data.get('fitness_level'),
             profile_picture_url=data.get('profile_picture_url')
         )
-        return jsonify({"message": "User added successfully", "user_id": user_id}}), 201
+        return jsonify({"message": "User added successfully", "user_id": user_id}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
