@@ -3,6 +3,9 @@ from datetime import datetime
 from database_connector import DatabaseConnector
 from s3_manager import S3Manager
 import os, json
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class DatabaseManager:
     def __init__(self):
