@@ -21,7 +21,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def add_user():
     data = request.json
     try:
-        db_manager.add_user(
+        user_id = db_manager.add_user(
             name=data['name'],
             email=data['email'],
             password_hash=pwd_context.hash(data['password_hash']),
