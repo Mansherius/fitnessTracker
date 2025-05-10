@@ -52,7 +52,7 @@ def user_login():
     try:
         user_id = db_manager.user_login(
             email=data['email'],
-            password_hash=pwd_context.hash(data['password_hash'])
+            password_hash=data['password_hash']
         )
         if user_id:
             return jsonify({"message": "Login successful", "user_id": user_id}), 200
