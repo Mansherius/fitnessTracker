@@ -42,6 +42,7 @@ class DatabaseManager:
             params = (str(user_id), name, email, password_hash, age, gender, fitness_level, profile_picture_url)
             self.connector.execute_query(query, params)
             print(f"User {name} added successfully.")
+            return user_id
         except Exception as e:
             print(f"An error occurred while adding user {name}: {e}")
             return
