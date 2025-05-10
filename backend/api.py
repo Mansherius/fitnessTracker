@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from database_manager import DatabaseManager, ProfilePictureHandler
 from s3_manager import S3Manager
+from passlib.context import CryptContext
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for cross-origin requests (e.g., from Flutter)
@@ -9,6 +10,8 @@ CORS(app)  # Enable CORS for cross-origin requests (e.g., from Flutter)
 db_manager = DatabaseManager()
 picture_handler = ProfilePictureHandler()
 s3_manager = S3Manager()
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ------------------ User Management ------------------
 
@@ -21,7 +24,7 @@ def add_user():
         db_manager.add_user(
             name=data['name'],
             email=data['email'],
-            password_hash=data['password_hash'],
+            password_hash=pwd_context.hash(data['password_hash']),
             age=data['age'],
             gender=data['gender'],
             fitness_level=data.get('fitness_level'),
