@@ -47,7 +47,7 @@ class DatabaseManager:
             print(f"An error occurred while adding user {name}: {e}")
             return
     
-    def user_login(self, email, plaintext_password):
+    def user_login(self, email, password_hash):
         try:
             query = "SELECT id, password_hash FROM users WHERE email = %s"
             user_data = self.connector.execute_query(query, (email,), commit=False, fetch=True)
@@ -57,7 +57,7 @@ class DatabaseManager:
                 
             user_id, stored_hash = user_data[0]
             
-            if pwd_context.verify(plaintext_password, stored_hash):
+            if pwd_context.verify(password_hash, stored_hash):
                 return user_id
             else:
                 return None
