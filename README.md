@@ -1,104 +1,165 @@
-# Cloud Computing - Fitness Tracker
+# 🏋️‍♂️ Fitt Tracker
 
-This repository contains the source code for the Cloud Computing - Fitness Tracker project—a scalable mobile fitness tracking application designed to log workouts, monitor health metrics, and provide personalized workout recommendations.
+**Fitt Tracker** is a full-featured fitness tracking mobile application built using **Flutter**, designed to help users track workouts, monitor health vitals, and receive performance-based workout recommendations — all while demonstrating clean microservices-based backend architecture.
 
-## Overview
+---
 
-The project is divided into two main components:
-- **Backend:**  
-  A modular Django-based backend that provides REST APIs for user management, workout logging, analytics, leaderboards, and workout recommendations. It leverages PostgreSQL for structured data, Redis for caching, and Docker for containerized deployment.
-- **Frontend:**  
-  A Flutter-based mobile application that serves as the user interface. The app allows users to track their workouts, view analytics, and receive recommendations.
+## 🚀 Features
 
-## Folder Structure
+### ✅ Core Functionality
+- **User Authentication**
+  - Sign up with email/password  
+  - Google Sign-In integration  
+  - Session management and token-based auth  
 
-```
-.
-├── LICENSE
-├── README.md
-├── backend              # Django backend and microservices
-├── docker-compose.yaml  # Docker Compose configuration for local development
-└── frontend
-    └── your_app_name    # Flutter project (created with: flutter create --org com.yourdomain your_app_name)
-```
+- **Workout Logging**
+  - Manual workout entry (sets, reps, weight, etc.)  
+  - Create and manage custom workout routines  
+  - Track one-rep maxes and personal bests  
 
-- **backend:** Contains all backend code, including the Django project, APIs, and service layers.
-- **frontend:** Contains your Flutter project. This is where you build and manage your mobile app.
-- **docker-compose.yaml:** Provides a configuration to orchestrate containers for the backend, database, cache, etc.
+- **Health Monitoring**
+  - Input and track heart rate, calories, blood pressure, oxygen levels  
+  - Supports integration with smartwatch data (via API - future scope)
 
-## Getting Started
+- **Leaderboards & Community**
+  - Compare progress with friends via global leaderboard  
+  - See how others are progressing with similar goals  
 
-### Prerequisites
+- **Workout Recommendations**
+  - Suggests exercises based on historical performance  
+  - Highlights muscle groups not recently trained  
 
-- **Flutter:** [Install Flutter](https://flutter.dev/docs/get-started/install)
-- **Python & Django:** Ensure Python 3.x is installed and set up for Django development.
-- **Docker & Docker Compose:** For containerized development environments.
-- **Git:** For version control.
+---
 
-### Setting Up the Backend
+## 🧱 Tech Stack
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Set up your Python virtual environment and install dependencies:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-3. Configure your environment variables as needed (e.g., database settings).
-4. Run database migrations and start the server:
-   ```bash
-   python manage.py migrate
-   python manage.py runserver
-   ```
+### 💻 Frontend
+- **Flutter (Dart)** for cross-platform UI  
+- Material Design for UI/UX consistency  
+- `provider` for state management (if applicable)  
+- Responsive layout for multiple device sizes  
 
-### Setting Up the Frontend
+### 🛠️ Backend (Microservices Architecture)
+- **REST API** built in **Node.js** with **Express**  
+- **MongoDB** for NoSQL database (User profiles, workouts, stats)  
+- **Docker** used to containerize services  
+- Session and token management for security  
+- `uuid` for generating secure session tokens  
 
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Create a new Flutter project (if you haven’t already):
-   ```bash
-   flutter create --org com.yourdomain your_app_name
-   ```
-3. Change into the newly created Flutter project folder:
-   ```bash
-   cd your_app_name
-   ```
-4. Run the Flutter application:
-   ```bash
-   flutter run
-   ```
+### 🧪 Testing and DevOps
+- Postman for API testing  
+- Logging via `logger` package (Flutter)  
+- `SessionManager` utility for persistent local storage  
+- Planned CI/CD pipeline using GitHub Actions  
 
-### Using Docker Compose
+---
 
-For a unified local development environment, you can use Docker Compose. This will bring up your backend, database, and other related services as defined in the `docker-compose.yaml` file.
+## 🔑 Project Modules Breakdown
 
-Run:
+| Module              | Description                                 |
+|---------------------|---------------------------------------------|
+| `lib/screens/auth/` | Login, signup, and auth flow screens        |
+| `lib/screens/feed/` | Workout feed & leaderboard display          |
+| `lib/screens/routines/` | Routine management and detail view      |
+| `lib/api/`          | API client handling all REST calls          |
+| `lib/utils/`        | Utility functions like session manager      |
+| `lib/widgets/`      | Reusable UI components                      |
+
+---
+
+## 📦 Backend Microservices (Planned or Implemented)
+
+- **Auth Service** — Handles login/signup, session creation  
+- **Workout Service** — Handles CRUD operations on workout data  
+- **Health Data Service** — Stores and retrieves vitals  
+- **Recommendation Engine** — Suggests next workouts based on trends  
+- **Leaderboard Service** — Tracks scores, ranks and global comparisons  
+
+---
+
+## 🧪 Sample API Response (Sign-Up)
+
+```json
+{
+  "message": "User created successfully",
+  "user_id": "abc123xyz"
+}
+````
+
+This `user_id` is saved locally and passed with every API call for authentication.
+
+---
+
+## 📱 Screenshots
+
+> Coming Soon — UI previews and user flow demo GIFs will be added once polishing is complete.
+
+---
+
+## 🧩 Challenges Faced
+
+* Syncing `user_id` correctly after sign-up and login
+* Handling device-specific bugs on Flutter iOS simulator
+* Consistent token/session persistence across app restarts
+* Avoiding backend crashes due to malformed data from clients
+* Making the app responsive and intuitive without relying on dropdowns
+
+---
+
+## 🧠 Learnings
+
+* Deep dive into microservices with authentication, health tracking, and performance analytics
+* Hands-on understanding of Flutter’s widget system and lifecycle
+* REST API design that balances performance and clarity
+* Debugging and deployment in a multi-platform context (Android, iOS)
+
+---
+
+## 📅 Timeline
+
+| Milestone | Description                                    |
+| --------- | ---------------------------------------------- |
+| Week 1-2  | Frontend setup, auth screens, state management |
+| Week 3-4  | Backend scaffolding, Mongo schema design       |
+| Week 5    | Workout/routine creation, leaderboard logic    |
+| Week 6    | Health data module + integration               |
+| Week 7    | Debugging, polishing, deployment-ready state   |
+
+---
+
+## 🛣️ Future Scope
+
+* 📊 Graphical charts to visualize performance over time
+* ⏱️ Timer-based routines with countdown and rest alerts
+* 🧠 Smarter recommendations using ML/AI models
+* 📡 Real-time sync and cloud storage support
+* 📥 Export data in PDF/CSV formats
+
+---
+
+## 🤝 Contributors
+
+* **Mansher Singh** – Full-stack Developer
+  *Always open to collaboration, feel free to connect on [LinkedIn](https://www.linkedin.com/in/mansherius)*
+
+---
+
+## ⚙️ Setup Instructions
+
+### Backend
+
 ```bash
-docker-compose up
+cd backend
+docker-compose up --build
 ```
 
-## Deployment
+### Frontend
 
-- **Backend:**  
-  The backend is containerized and can be deployed on cloud platforms (e.g., AWS Elastic Beanstalk). Update the environment configurations for production and leverage CI/CD (e.g., GitHub Actions) for automated deployments.
-- **Frontend:**  
-  Build the Flutter app for release on both Android and iOS using standard Flutter build commands.
+```bash
+cd frontend
+flutter pub get
+flutter run
+```
 
-## Contributing
+> Ensure that your device/simulator is running and backend server is reachable at the correct IP (`http://51.20.171.163:8000`)
 
-Contributions are welcome! Please follow these steps:
-1. Fork the repository.
-2. Create a feature branch.
-3. Commit your changes with clear messages.
-4. Push to your branch and open a pull request for review.
-
-## License
-
-This project is licensed under the terms of the [LICENSE](./LICENSE).
-
-Feel free to modify any sections to better suit your project's specifics.
