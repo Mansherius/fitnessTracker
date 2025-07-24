@@ -11,45 +11,48 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final Uuid _uuid = Uuid(); // For generating unique tokens
 
-  /// Username/Password login
-  Future<Map<String, String>?> signInWithUsernamePassword(String email, String password) async {
+  /// Username/password login.  Saves session and returns a map with both token & user_id.
+  Future<Map<String, String>?> signInWithUsernamePassword(
+    String email,
+    String password,
+  ) async {
     final uri = Uri.parse('$_baseUrl/login');
     final payload = {
       'email': email,
-      'password_hash': password, // Ensure this matches the backend's expected key
+      'password_hash': password,
     };
 
     try {
-      _logger.i('Sending login request to $uri with payload: $payload');
-
-      final response = await http.post(
+      _logger.i('POST $uri → $payload');
+      final resp = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
+      _logger.i('← ${resp.statusCode}: ${resp.body}');
 
-      _logger.i('Received response: ${response.statusCode} - ${response.body}');
-
-      if (response.statusCode == 200) {
-        final responseBody = jsonDecode(response.body);
-        final userId = responseBody['user_id']; // Extract user_id from the response
-
-        // Generate a local token
-        final token = _uuid.v4(); // Generate a unique token using UUID
-
-        // Save the session token and user ID
-        await SessionManager.saveSession(token, userId);
-
-        return {
-          'token': token, // Return the generated token
-          'user_id': userId, // Return the user ID
-        };
-      } else {
-        _logger.w('Login failed: ${response.body}');
+      if (resp.statusCode != 200) {
+        _logger.w('Login failed: ${resp.body}');
         return null;
       }
-    } catch (error, stackTrace) {
-      _logger.e('Username/Password sign-in error', error: error, stackTrace: stackTrace);
+
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      final userId = body['user_id'] as String?;
+      if (userId == null) {
+        _logger.w('Missing user_id in login response');
+        return null;
+      }
+
+      // Generate + save local session token and user ID
+      final token = _uuid.v4();
+      await SessionManager.saveSession(token, userId);
+
+      return {
+        'token': token,
+        'user_id': userId,
+      };
+    } catch (err, st) {
+      _logger.e('signIn error', error: err, stackTrace: st);
       return null;
     }
   }

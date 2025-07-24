@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:fitt_tracker/screens/leaderboard/leaderboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -79,6 +80,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<List<dynamic>?> _fetchLeaderboard() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/leaderboard'));
+      print('Leaderboard API Response: ${response.body}'); // Debug log
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List<dynamic>) {
+          return data;
+        } else {
+          debugPrint('Unexpected leaderboard response format: $data');
+          return []; // Treat null or unexpected formats as an empty list
+        }
+      } else {
+        debugPrint('Failed to fetch leaderboard: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error fetching leaderboard: $e');
+      return null;
+    }
+  }
+
   Future<void> _loadWorkoutFeed() async {
     try {
       final userId = await SessionManager.getUserId();
@@ -105,41 +129,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // parse date
           DateTime ts;
           try {
-            ts = DateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'")
-                .parse(data['date'] as String);
+            ts = DateFormat(
+              "EEE, dd MMM yyyy HH:mm:ss 'GMT'",
+            ).parse(data['date'] as String);
           } catch (_) {
             ts = DateTime.now();
           }
 
           // build exercises
           final exRaw = data['exercises'] as List<dynamic>? ?? [];
-          final exercises = exRaw
-              .map((ex) => ExerciseSummary(
-                    name: ex['exercise'],
-                    sets: ex['sets'],
-                    reps: ex['reps'],
-                    weight: (ex['weight'] as num).toDouble(),
-                  ))
-              .toList();
+          final exercises =
+              exRaw
+                  .map(
+                    (ex) => ExerciseSummary(
+                      name: ex['exercise'],
+                      sets: ex['sets'],
+                      reps: ex['reps'],
+                      weight: (ex['weight'] as num).toDouble(),
+                    ),
+                  )
+                  .toList();
 
           // total sets
-          final totalSets =
-              exercises.fold<int>(0, (sum, ex) => sum + ex.sets);
+          final totalSets = exercises.fold<int>(0, (sum, ex) => sum + ex.sets);
 
-          detailsList.add(FeedItem(
-            workoutId: workoutId,
-            userId: userId,
-            username: data['user_name'] as String? ?? 'Unknown',
-            profilePicUrl:
-                data['profile_picture_url'] as String? ?? '',
-            workoutTitle: data['name'] as String? ?? 'Untitled',
-            notes: data['notes'] as String? ?? '',
-            duration: (data['duration'] as int?) ?? 0,
-            volume: (data['volume'] as num?)?.toDouble() ?? 0.0,
-            sets: totalSets,
-            timestamp: ts,
-            exercises: exercises,
-          ));
+          detailsList.add(
+            FeedItem(
+              workoutId: workoutId,
+              userId: userId,
+              username: data['user_name'] as String? ?? 'Unknown',
+              profilePicUrl: data['profile_picture_url'] as String? ?? '',
+              workoutTitle: data['name'] as String? ?? 'Untitled',
+              notes: data['notes'] as String? ?? '',
+              duration: (data['duration'] as int?) ?? 0,
+              volume: (data['volume'] as num?)?.toDouble() ?? 0.0,
+              sets: totalSets,
+              timestamp: ts,
+              exercises: exercises,
+            ),
+          );
         }
 
         setState(() => _workouts = detailsList);
@@ -154,38 +182,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showEditPictureOptions() {
     showModalBottomSheet(
       context: context,
-      builder: (_) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Change Picture'),
-              onTap: () async {
-                Navigator.pop(context);
-                final ok = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ImagePickerScreen(),
-                  ),
-                );
-                if (ok == true) _loadProfileData();
-              },
+      builder:
+          (_) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Change Picture'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final ok = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ImagePickerScreen(),
+                      ),
+                    );
+                    if (ok == true) _loadProfileData();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete),
+                  title: const Text('Delete Picture'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final serv = ImagePickingService();
+                    final userId = await SessionManager.getUserId();
+                    if (userId == null) throw Exception();
+                    final ok = await serv.deleteProfilePicture(userId);
+                    if (ok) _loadProfileData();
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.delete),
-              title: const Text('Delete Picture'),
-              onTap: () async {
-                Navigator.pop(context);
-                final serv = ImagePickingService();
-                final userId = await SessionManager.getUserId();
-                if (userId == null) throw Exception();
-                final ok = await serv.deleteProfilePicture(userId);
-                if (ok) _loadProfileData();
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -213,11 +242,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       CircleAvatar(
                         radius: 40,
-                        backgroundImage: _profilePicUrl.isNotEmpty
-                            ? NetworkImage(_profilePicUrl)
-                            : const AssetImage(
-                                    'assets/images/default_profile.png')
-                                as ImageProvider,
+                        backgroundImage:
+                            _profilePicUrl.isNotEmpty
+                                ? NetworkImage(_profilePicUrl)
+                                : const AssetImage(
+                                      'assets/images/default_profile.png',
+                                    )
+                                    as ImageProvider,
                       ),
                       Positioned(
                         top: 0,
@@ -255,18 +286,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text("Followers: $_followersCount",
-                              style: const TextStyle(color: Colors.white)),
+                          Text(
+                            "Followers: $_followersCount",
+                            style: const TextStyle(color: Colors.white),
+                          ),
                           const SizedBox(width: 16),
-                          Text("Following: $_followingCount",
-                              style: const TextStyle(color: Colors.white)),
+                          Text(
+                            "Following: $_followingCount",
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text("Workouts: $_workoutsCount",
-                              style: const TextStyle(color: Colors.white)),
+                          Text(
+                            "Workouts: $_workoutsCount",
+                            style: const TextStyle(color: Colors.white),
+                          ),
                           if (_fitnessLevel != null &&
                               _fitnessLevel!.isNotEmpty)
                             Padding(
@@ -302,6 +339,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 24),
 
+              const SizedBox(height: 24), // Add spacing before the button
+              Center(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final leaderboardData = await _fetchLeaderboard();
+                    if (leaderboardData != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => LeaderboardScreen(
+                                leaderboardData: leaderboardData,
+                              ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to load leaderboard'),
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue, // Button color
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text(
+                    'View Leaderboard',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24), // Add spacing after the button
               // — Workout Feed
               const Text(
                 "Workout Feed",
@@ -325,8 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              WorkoutDetailScreen(workout: w),
+                          builder: (_) => WorkoutDetailScreen(workout: w),
                         ),
                       );
                     },

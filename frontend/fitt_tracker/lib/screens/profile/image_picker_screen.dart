@@ -29,17 +29,26 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   if (_selectedImage == null) return;
 
   final userId = await SessionManager.getUserId();
-  if (userId == null) return;
+  if (!mounted || userId == null) return;
 
-  final success = await _imagePickingService.uploadProfilePicture(userId, _selectedImage!);
+  final success = await _imagePickingService.uploadProfilePicture(
+    userId,
+    _selectedImage!,
+  );
+
+  // Bail out if this State has been disposed while we were awaiting.
+  if (!mounted) return;
+
   if (success) {
-    Navigator.pop(context, true); // Return to profile screen and trigger reload
+    Navigator.pop(context, true); // still safe to pop because we're mounted
   } else {
+    // now it's safe to show a SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Failed to upload profile picture')),
     );
   }
 }
+
 
   @override
   Widget build(BuildContext context) {

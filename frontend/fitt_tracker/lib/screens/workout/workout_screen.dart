@@ -16,8 +16,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   // For the bottom‐drawer
   PersistentBottomSheetController? _bottomSheetController;
-  String? _minimizedMode;         // 'empty' or 'routine'
-  Routine? _minimizedRoutine;     // for routine mode
+  String? _minimizedMode; // 'empty' or 'routine'
+  Routine? _minimizedRoutine; // for routine mode
 
   // Scaffold key so we can showBottomSheet outside of build()
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -212,40 +212,62 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(
-              child: Text(r.name,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'edit', child: Text('Edit')),
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    r.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  itemBuilder:
+                      (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        PopupMenuItem(value: 'delete', child: Text('Delete')),
+                      ],
+                  onSelected: (v) {
+                    /* TODO */
+                  },
+                ),
               ],
-              onSelected: (v) {/* TODO */},
             ),
-          ]),
-          const SizedBox(height: 8),
-          for (var ex in preview)
-            Text('${ex.sets}x${ex.reps} @ ${ex.weight}kg',
-                style: const TextStyle(color: Colors.grey)),
-          if (r.exercises.length > 3)
-            TextButton(
-              onPressed: () => _startRoutine(r),
-              child: Text('See all ${r.exercises.length} exercises',
-                  style: TextStyle(color: Colors.blueAccent[200])),
+            const SizedBox(height: 8),
+            for (var ex in preview)
+              Text(
+                '${ex.sets}x${ex.reps} @ ${ex.weight}kg',
+                style: const TextStyle(color: Colors.grey),
+              ),
+            if (r.exercises.length > 3)
+              TextButton(
+                onPressed: () => _startRoutine(r),
+                child: Text(
+                  'See all ${r.exercises.length} exercises',
+                  style: TextStyle(color: Colors.blueAccent[200]),
+                ),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _startEmptyWorkout,
+                icon: const Icon(Icons.fitness_center),
+                label: const Text('Start Empty Workout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
             ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () => _startRoutine(r),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: const EdgeInsets.symmetric(vertical: 14)),
-            child: const Text('Start Routine'),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
